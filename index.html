@@ -4,6 +4,10 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Análisis de Riesgo por Bipedestación — Ley Silla (LFT Art. 133 Fracc. XVII Bis)</title>
+
+<!-- Cargar Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
   :root {
     --bg: #0f172a;
@@ -219,7 +223,7 @@
     }
   }
 
-  /* ---------- Coloreado de puntaje en pantalla (factor-table) ---------- */
+  /* ---------- Coloreado de puntaje en pantalla ---------- */
   .score-cell-1 { background: #14532d; color: #bbf7d0; font-weight: 700; }
   .score-cell-2 { background: #713f12; color: #fef08a; font-weight: 700; }
   .score-cell-3 { background: #7f1d1d; color: #fecaca; font-weight: 700; }
@@ -262,6 +266,26 @@
   .login-card label { text-align: left; }
   .login-card button { width: 100%; margin: 10px 0 0; }
   #loginError { color: var(--red); font-size: 0.8rem; margin-top: 8px; min-height: 1em; }
+
+  /* Estilos para el historial */
+  #historialList table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.75rem;
+  }
+  #historialList th {
+    background: var(--panel-2);
+    padding: 6px 8px;
+    text-align: left;
+    color: var(--accent);
+  }
+  #historialList td {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  #historialList tr:hover {
+    background: var(--panel-2);
+  }
 </style>
 </head>
 <body>
@@ -536,6 +560,22 @@
       </div>
       <pre id="jsonOutput" style="display:none;"></pre>
     </div>
+
+    <!-- Tarjeta de historial -->
+    <div class="card" id="historialCard" style="display:none;">
+        <h2>📋 Historial de Evaluaciones</h2>
+        <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+            <button type="button" id="btnCargarHistorial" style="background:var(--accent); border:none; padding:6px 14px; border-radius:6px; cursor:pointer; font-weight:600;">
+                🔄 Cargar Historial
+            </button>
+            <button type="button" id="btnRefrescarHistorial" style="background:var(--panel-2); border:1px solid var(--border); padding:6px 14px; border-radius:6px; cursor:pointer; color:var(--text);">
+                🔄 Refrescar
+            </button>
+        </div>
+        <div id="historialList" style="max-height:350px; overflow-y:auto; font-size:0.8rem;">
+            <p style="color:var(--muted); text-align:center;">Carga el historial para ver las evaluaciones guardadas</p>
+        </div>
+    </div>
   </div>
 </div>
 
@@ -544,15 +584,23 @@
 </div>
 <!-- cierre de #appRoot -->
 
-<!-- Contenedor del reporte imprimible (solo visible al imprimir / generar PDF) -->
+<!-- Contenedor del reporte imprimible -->
 <div id="printReport"></div>
 
 <script>
 (function () {
   "use strict";
 
-  // -------------------- AUTENTICACIÓN --------------------
+  // ============================================================
+  // CONFIGURACIÓN DE SUPABASE
+  // ============================================================
+  const SUPABASE_URL = 'https://hctngpndjqqvdddeqfuy.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_6YSgxCiZJFeCp1SfXcYB0Q_oYTk5AD_';
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+  // ============================================================
+  // AUTENTICACIÓN
+  // ============================================================
   const VALID_USER = "CHILE";
   const VALID_PASS = "RELLENO";
   const AUTH_KEY = "leysilla_auth";
@@ -585,10 +633,360 @@
     }
   });
 
-  const form = document.getElementById("evalForm");
+  // ============================================================
+  // FUNCIONES DE SUPABASE
+  // ============================================================
+  
+  async function guardarEvaluacion(data, resultado) {
+    try {
+        const registro = {
+            denominacion_centro: data.centroTrabajo.denominacion || 'No especificado',
+            domicilio_centro: data.centroTrabajo.domicilio || 'No especificado',
+            logo_empresa: data.centroTrabajo.logoDataUrl || null,
+            evaluador: data.evaluador || 'No especificado',
+            fecha_verificacion: data.fechaVerificacion || new Date().toISOString().split('T')[0],
+            trabajador_nombre: data.trabajador.nombre || 'No especificado',
+            trabajador_genero: data.trabajador.genero || 'No especificado',
+            trabajador_edad: data.trabajador.edad || 0,
+            trabajador_puesto: data.trabajador.puesto || 'No especificado',
+            trabajador_area: data.trabajador.area || 'No especificado',
+            amb_ruido: data.condicionesAmbientales.ruido || null,
+            amb_iluminacion: data.condicionesAmbientales.iluminacion || null,
+            amb_ventilacion: data.condicionesAmbientales.ventilacion || null,
+            amb_temperatura: data.condicionesAmbientales.temperatura || null,
+            amb_vibraciones: data.condicionesAmbientales.vibraciones || null,
+            amb_contaminantes_quimicos: data.condicionesAmbientales.contaminantesQuimicos || null,
+            equipos_herramientas: data.equiposHerramientas || null,
+            carga_empuja: data.cargaFisicaManual?.empuja || false,
+            carga_jala: data.cargaFisicaManual?.jala || false,
+            carga_levanta: data.cargaFisicaManual?.levanta || false,
+            nivel_atencion: data.nivelAtencionRequerido || 'Visual',
+            vuln_estado_salud: data.factoresVulnerabilidad?.estadoSaludPrevio || false,
+            vuln_gravidez: data.factoresVulnerabilidad?.gravidez || false,
+            vuln_otro: data.factoresVulnerabilidad?.otro || false,
+            vuln_detalle: data.factoresVulnerabilidad?.detalle || null,
+            bip_estatica: data.bipedestacion?.estatica || false,
+            bip_dinamica: data.bipedestacion?.dinamica || false,
+            bip_tiempo_continuo: data.bipedestacion?.tiempoContinuoHoras || 0,
+            cond_a: data.condicionantes?.a || 1,
+            cond_b: data.condicionantes?.b || 1,
+            cond_c: data.condicionantes?.c || 1,
+            cond_d: data.condicionantes?.d || 1,
+            cond_e: data.condicionantes?.e || 1,
+            cond_f: data.condicionantes?.f || 1,
+            cond_g: data.condicionantes?.g || 1,
+            rest_obliga_siempre_pie: data.restriccionesIlegales?.obligaSiempreDePie || false,
+            rest_prohibe_sentarse: data.restriccionesIlegales?.prohibidoSentarse || false,
+            evidencia_foto: data.evidenciaFotografica?.dataUrl || null,
+            clasificacion: resultado.clasificacionBipedestacion || [],
+            recomendaciones: resultado.recomendaciones || {},
+            alerta_legal: resultado.alertasLegales?.length > 0 || false,
+            mensaje_alerta: resultado.alertasLegales?.map(a => a.mensaje).join(' | ') || null,
+            puntaje_total: resultado.evaluacionRiesgo.puntajeTotal,
+            nivel_riesgo: resultado.evaluacionRiesgo.nivel
+        };
 
+        const { data: inserted, error } = await supabaseClient
+            .from('evaluaciones_ley_silla')
+            .insert([registro])
+            .select();
+
+        if (error) {
+            console.error('Error de Supabase:', error);
+            throw new Error(error.message);
+        }
+
+        alert('✅ Evaluación guardada exitosamente en Supabase');
+        return true;
+    } catch (error) {
+        console.error('Error al guardar:', error);
+        alert('❌ Error al guardar: ' + error.message);
+        return false;
+    }
+  }
+
+  async function cargarHistorial() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('evaluaciones_ley_silla')
+            .select('id, evaluador, fecha_verificacion, trabajador_nombre, puntaje_total, nivel_riesgo, created_at, denominacion_centro')
+            .order('created_at', { ascending: false })
+            .limit(50);
+
+        if (error) {
+            console.error('Error al cargar historial:', error);
+            return [];
+        }
+        return data || [];
+    } catch (error) {
+        console.error('Error en cargarHistorial:', error);
+        return [];
+    }
+  }
+
+  async function cargarEvaluacion(id) {
+    try {
+        const { data, error } = await supabaseClient
+            .from('evaluaciones_ley_silla')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error) {
+            console.error('Error al cargar evaluación:', error);
+            return null;
+        }
+        return data;
+    } catch (error) {
+        console.error('Error en cargarEvaluacion:', error);
+        return null;
+    }
+  }
+
+  async function eliminarEvaluacion(id) {
+    if (!confirm('¿Estás seguro de eliminar esta evaluación?')) return false;
+    try {
+        const { error } = await supabaseClient
+            .from('evaluaciones_ley_silla')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+        alert('✅ Evaluación eliminada');
+        return true;
+    } catch (error) {
+        console.error('Error al eliminar:', error);
+        alert('❌ Error al eliminar: ' + error.message);
+        return false;
+    }
+  }
+
+  // ============================================================
+  // FUNCIONES DE HISTORIAL
+  // ============================================================
+
+  async function mostrarHistorial() {
+    const contenedor = document.getElementById('historialList');
+    contenedor.innerHTML = '<p style="color:var(--muted);">⏳ Cargando historial...</p>';
+    
+    try {
+        const historial = await cargarHistorial();
+        
+        if (!historial || historial.length === 0) {
+            contenedor.innerHTML = '<p style="color:var(--muted);">📭 No hay evaluaciones guardadas.</p>';
+            document.getElementById('historialCard').style.display = 'block';
+            return;
+        }
+
+        let html = `<table>
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Evaluador</th>
+                    <th>Trabajador</th>
+                    <th style="text-align:center;">Puntaje</th>
+                    <th style="text-align:center;">Nivel</th>
+                    <th style="text-align:center;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>`;
+        
+        historial.forEach(item => {
+            const nivelClass = (item.nivel_riesgo || '').toLowerCase();
+            let bgColor, textColor;
+            
+            if (nivelClass === 'bajo') {
+                bgColor = '#14532d';
+                textColor = '#22c55e';
+            } else if (nivelClass === 'medio') {
+                bgColor = '#422006';
+                textColor = '#eab308';
+            } else {
+                bgColor = '#450a0a';
+                textColor = '#ef4444';
+            }
+            
+            const fecha = item.created_at ? new Date(item.created_at).toLocaleDateString('es-MX') : '-';
+            const evaluador = item.evaluador || '-';
+            const trabajador = item.trabajador_nombre || '-';
+            const puntaje = item.puntaje_total || 0;
+            const nivel = item.nivel_riesgo || 'N/A';
+            const id = item.id || '';
+            
+            html += `<tr>
+                <td>${fecha}</td>
+                <td>${evaluador}</td>
+                <td>${trabajador}</td>
+                <td style="text-align:center;">${puntaje}/21</td>
+                <td style="text-align:center;">
+                    <span style="background:${bgColor}; color:${textColor}; padding:2px 10px; border-radius:12px; font-weight:700; font-size:0.7rem; display:inline-block;">
+                        ${nivel}
+                    </span>
+                </td>
+                <td style="text-align:center;">
+                    <button onclick="window.cargarEvaluacionYRenderizar('${id}')" 
+                            style="padding:2px 8px; font-size:0.7rem; background:var(--accent); border:none; border-radius:4px; cursor:pointer; margin-right:4px; color:#0c1b2a;">
+                        📖 Cargar
+                    </button>
+                    <button onclick="window.eliminarEvaluacionYRecargar('${id}')" 
+                            style="padding:2px 8px; font-size:0.7rem; background:#450a0a; color:#fecaca; border:1px solid #7f1d1d; border-radius:4px; cursor:pointer;">
+                        🗑️
+                    </button>
+                </td>
+            </tr>`;
+        });
+        
+        html += '</tbody></table>';
+        contenedor.innerHTML = html;
+        document.getElementById('historialCard').style.display = 'block';
+        
+    } catch (error) {
+        console.error('Error en mostrarHistorial:', error);
+        contenedor.innerHTML = '<p style="color:var(--red);">❌ Error al cargar el historial: ' + error.message + '</p>';
+    }
+  }
+
+  window.cargarEvaluacionYRenderizar = async function(id) {
+    try {
+        const data = await cargarEvaluacion(id);
+        if (!data) {
+            alert('❌ No se pudo cargar la evaluación');
+            return;
+        }
+
+        const input = {
+            centroTrabajo: {
+                denominacion: data.denominacion_centro || '',
+                domicilio: data.domicilio_centro || '',
+                logoDataUrl: data.logo_empresa || null
+            },
+            evaluador: data.evaluador || '',
+            fechaVerificacion: data.fecha_verificacion || '',
+            trabajador: {
+                nombre: data.trabajador_nombre || '',
+                genero: data.trabajador_genero || 'Femenino',
+                edad: data.trabajador_edad || 0,
+                puesto: data.trabajador_puesto || '',
+                area: data.trabajador_area || ''
+            },
+            condicionesAmbientales: {
+                ruido: data.amb_ruido || '',
+                iluminacion: data.amb_iluminacion || '',
+                ventilacion: data.amb_ventilacion || '',
+                temperatura: data.amb_temperatura || '',
+                vibraciones: data.amb_vibraciones || '',
+                contaminantesQuimicos: data.amb_contaminantes_quimicos || ''
+            },
+            equiposHerramientas: data.equipos_herramientas || '',
+            cargaFisicaManual: {
+                empuja: data.carga_empuja || false,
+                jala: data.carga_jala || false,
+                levanta: data.carga_levanta || false
+            },
+            nivelAtencionRequerido: data.nivel_atencion || 'Visual',
+            factoresVulnerabilidad: {
+                estadoSaludPrevio: data.vuln_estado_salud || false,
+                gravidez: data.vuln_gravidez || false,
+                otro: data.vuln_otro || false,
+                detalle: data.vuln_detalle || ''
+            },
+            bipedestacion: {
+                estatica: data.bip_estatica || false,
+                dinamica: data.bip_dinamica || false,
+                tiempoContinuoHoras: data.bip_tiempo_continuo || 0
+            },
+            condicionantes: {
+                a: data.cond_a || 1,
+                b: data.cond_b || 1,
+                c: data.cond_c || 1,
+                d: data.cond_d || 1,
+                e: data.cond_e || 1,
+                f: data.cond_f || 1,
+                g: data.cond_g || 1
+            },
+            restriccionesIlegales: {
+                obligaSiempreDePie: data.rest_obliga_siempre_pie || false,
+                prohibidoSentarse: data.rest_prohibe_sentarse || false
+            },
+            evidenciaFotografica: {
+                dataUrl: data.evidencia_foto || null,
+                nombreArchivo: 'cargado_historial'
+            }
+        };
+
+        const resultado = evaluar(input);
+        render(resultado);
+        window.__ultimoResultado = resultado;
+        llenarFormulario(input);
+        
+        if (input.evidenciaFotografica.dataUrl) {
+            const fotoPreview = document.getElementById('fotoPreview');
+            fotoPreview.src = input.evidenciaFotografica.dataUrl;
+            fotoPreview.style.display = 'block';
+        }
+        
+        document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+        
+    } catch (error) {
+        console.error('Error al cargar evaluación:', error);
+        alert('❌ Error al cargar la evaluación: ' + error.message);
+    }
+  };
+
+  window.eliminarEvaluacionYRecargar = async function(id) {
+    const eliminado = await eliminarEvaluacion(id);
+    if (eliminado) {
+        await mostrarHistorial();
+    }
+  };
+
+  function llenarFormulario(input) {
+    document.getElementById('ctNombre').value = input.centroTrabajo.denominacion || '';
+    document.getElementById('ctDomicilio').value = input.centroTrabajo.domicilio || '';
+    document.getElementById('evaluador').value = input.evaluador || '';
+    document.getElementById('fechaVerificacion').value = input.fechaVerificacion || '';
+    document.getElementById('trabNombre').value = input.trabajador.nombre || '';
+    document.getElementById('trabGenero').value = input.trabajador.genero || 'Femenino';
+    document.getElementById('trabEdad').value = input.trabajador.edad || '';
+    document.getElementById('trabPuesto').value = input.trabajador.puesto || '';
+    document.getElementById('trabArea').value = input.trabajador.area || '';
+    document.getElementById('ambRuido').value = input.condicionesAmbientales.ruido || '';
+    document.getElementById('ambIlum').value = input.condicionesAmbientales.iluminacion || '';
+    document.getElementById('ambVent').value = input.condicionesAmbientales.ventilacion || '';
+    document.getElementById('ambTemp').value = input.condicionesAmbientales.temperatura || '';
+    document.getElementById('ambVibra').value = input.condicionesAmbientales.vibraciones || '';
+    document.getElementById('ambQuim').value = input.condicionesAmbientales.contaminantesQuimicos || '';
+    document.getElementById('equipos').value = input.equiposHerramientas || '';
+    document.getElementById('cargaEmpuja').checked = input.cargaFisicaManual.empuja || false;
+    document.getElementById('cargaJala').checked = input.cargaFisicaManual.jala || false;
+    document.getElementById('cargaLevanta').checked = input.cargaFisicaManual.levanta || false;
+    document.getElementById('atencion').value = input.nivelAtencionRequerido || 'Visual';
+    document.getElementById('vulnSalud').checked = input.factoresVulnerabilidad.estadoSaludPrevio || false;
+    document.getElementById('vulnGravidez').checked = input.factoresVulnerabilidad.gravidez || false;
+    document.getElementById('vulnOtro').checked = input.factoresVulnerabilidad.otro || false;
+    document.getElementById('vulnDetalle').value = input.factoresVulnerabilidad.detalle || '';
+    document.getElementById('postEstatica').checked = input.bipedestacion.estatica || false;
+    document.getElementById('postDinamica').checked = input.bipedestacion.dinamica || false;
+    document.getElementById('tiempoContinuo').value = input.bipedestacion.tiempoContinuoHoras || 0;
+    document.getElementById('fa').value = input.condicionantes.a || 1;
+    document.getElementById('fb').value = input.condicionantes.b || 1;
+    document.getElementById('fc').value = input.condicionantes.c || 1;
+    document.getElementById('fd').value = input.condicionantes.d || 1;
+    document.getElementById('fe').value = input.condicionantes.e || 1;
+    document.getElementById('ff').value = input.condicionantes.f || 1;
+    document.getElementById('fg').value = input.condicionantes.g || 1;
+    document.getElementById('obligaSiempreDePie').checked = input.restriccionesIlegales.obligaSiempreDePie || false;
+    document.getElementById('prohibidoSentarse').checked = input.restriccionesIlegales.prohibidoSentarse || false;
+  }
+
+  // ============================================================
+  // VARIABLES Y FUNCIONES DEL FORMULARIO
+  // ============================================================
+
+  const form = document.getElementById("evalForm");
   const fotoInput = document.getElementById("fotoActividad");
   const fotoPreview = document.getElementById("fotoPreview");
+  
   fotoInput.addEventListener("change", function () {
     if (fotoInput.files && fotoInput.files[0]) {
       readFileAsDataURL(fotoInput.files[0]).then(function (dataUrl) {
@@ -643,26 +1041,9 @@
     });
   }
 
-  form.addEventListener("submit", async function (e) {
-    e.preventDefault();
-
-    if (!fotoInput.files || fotoInput.files.length === 0) {
-      alert("Debe adjuntar una fotografía de la actividad del puesto de trabajo antes de evaluar el riesgo.");
-      return;
-    }
-
-    const fotoDataUrl = await readFileAsDataURL(fotoInput.files[0]);
-
-    const data = collectFormData();
-    data.evidenciaFotografica = {
-      nombreArchivo: fotoInput.files[0].name,
-      dataUrl: fotoDataUrl
-    };
-
-    const result = evaluar(data);
-    render(result);
-    window.__ultimoResultado = result;
-  });
+  // ============================================================
+  // LÓGICA DE NEGOCIO
+  // ============================================================
 
   function collectFormData() {
     return {
@@ -725,8 +1106,6 @@
   function val(id) { return document.getElementById(id).value.trim(); }
   function checked(id) { return document.getElementById(id).checked; }
 
-  // -------------------- ESTILOS DE COLOR (en línea, para que se respeten en PDF/Word) --------------------
-
   function scoreCellStyle(v) {
     const map = {
       1: "background-color:#bbf7d0; color:#14532d; font-weight:700;",
@@ -744,8 +1123,6 @@
     };
     return (colores[nivel] || "") + " color:#ffffff; text-align:center; font-size:1.3rem; font-weight:800; padding:14px; border-radius:8px; margin:10px 0;";
   }
-
-  // -------------------- ICONOS DE TIPOS DE ASIENTO --------------------
 
   const SEAT_ICONS = {
     bancoAlto: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -777,14 +1154,6 @@
     </svg>`
   };
 
-  const REPOSAPIES_ICON = `<svg viewBox="0 0 100 60" xmlns="http://www.w3.org/2000/svg">
-    <rect x="14" y="14" width="72" height="22" rx="4" fill="none" stroke="#0c4a6e" stroke-width="4"/>
-    <line x1="22" y1="36" x2="18" y2="50" stroke="#0c4a6e" stroke-width="3"/>
-    <line x1="78" y1="36" x2="82" y2="50" stroke="#0c4a6e" stroke-width="3"/>
-  </svg>`;
-
-  // -------------------- LÓGICA DE NEGOCIO --------------------
-
   function clasificarBipedestacion(input) {
     const tags = [];
     if (input.bipedestacion.estatica) tags.push("Estática");
@@ -794,7 +1163,6 @@
     return tags;
   }
 
-  // Procedimiento de puntaje oficial (Quinta, inciso D, Disposiciones STPS DOF 17/07/2025)
   function calcularNivelRiesgo(input) {
     const c = input.condicionantes;
     const factores = {
@@ -866,7 +1234,6 @@
       "Reposapiés: extensible/retráctil, cuando la altura del asiento lo requiera."
     ];
 
-    // Medidas técnico-administrativas (Quinta, inciso G, fracciones I a V)
     const administrativas = [
       "Diseñar o adecuar la estación de trabajo para permitir la incorporación de asientos o sillas con respaldo y el libre movimiento de extremidades y tronco.",
       "Alternar tareas que permitan el cambio de postura en bipedestación y sedente.",
@@ -902,7 +1269,9 @@
     };
   }
 
-  // -------------------- RENDER --------------------
+  // ============================================================
+  // RENDER
+  // ============================================================
 
   function render(result) {
     document.getElementById("resultCard").style.display = "block";
@@ -953,7 +1322,9 @@
     document.getElementById("jsonOutput").textContent = JSON.stringify(result, null, 2);
   }
 
-  // -------------------- EXPORTACIÓN --------------------
+  // ============================================================
+  // EXPORTACIÓN
+  // ============================================================
 
   document.getElementById("btnToggleJson").addEventListener("click", function () {
     const pre = document.getElementById("jsonOutput");
@@ -987,7 +1358,6 @@
   document.getElementById("btnDownloadWord").addEventListener("click", function () {
     if (!window.__ultimoResultado) return;
     const reportHtml = buildPrintReportHTML(window.__ultimoResultado);
-    // Word no soporta SVG embebido: se sustituye el ícono por una nota textual.
     const reportHtmlParaWord = reportHtml.replace(/<svg[\s\S]*?<\/svg>/g, "<em>(Ilustración disponible en el reporte PDF)</em>");
     download(
       `acta_bipedestacion_${slug(window.__ultimoResultado.input.trabajador.nombre)}.doc`,
@@ -1092,109 +1462,264 @@
     const foto = (i.evidenciaFotografica && i.evidenciaFotografica.dataUrl) || "";
     const logo = i.centroTrabajo.logoDataUrl || "";
 
-    let html = `<h1>Acta de Análisis de Riesgo por Bipedestación — "Ley Silla"</h1>`;
-    html += `<p class="software-tag">SOFTWARE LEY SILLA, VERSION 2.1, BRAINTECH.</p>`;
-    html += `<p>${r.meta.fundamento}</p>`;
-    html += `<p>Generado el: ${new Date(r.meta.generadoEl).toLocaleString("es-MX")}</p>`;
+    let html = `
+    <div style="font-family: Arial, sans-serif; color: #111; padding: 20px; max-width: 100%;">
+        <!-- ENCABEZADO -->
+        <div style="text-align: center; border-bottom: 3px solid #0c4a6e; padding-bottom: 15px; margin-bottom: 20px;">
+            <h1 style="font-size: 20pt; margin: 0; color: #0c4a6e;">Acta de Análisis de Riesgo por Bipedestación</h1>
+            <h2 style="font-size: 14pt; margin: 5px 0; color: #1e293b;">"Ley Silla"</h2>
+            <p style="font-size: 10pt; color: #555; margin: 5px 0;">${r.meta.fundamento}</p>
+            <p style="font-size: 9pt; color: #777; margin: 3px 0;">Generado el: ${new Date(r.meta.generadoEl).toLocaleString("es-MX")}</p>
+            <p style="font-size: 9pt; color: #777; margin: 3px 0;">SOFTWARE LEY SILLA, VERSION 2.1, BRAINTECH.</p>
+        </div>
 
-    // ======================= I. DATOS PREVIOS =======================
-    html += `<div class="seccion-titulo">I. DATOS PREVIOS</div>`;
+        <!-- ======================= I. DATOS PREVIOS ======================= -->
+        <div style="background: #f0f7ff; padding: 10px 15px; margin: 20px 0 10px 0; border-left: 4px solid #0c4a6e;">
+            <h3 style="margin: 0; color: #0c4a6e; font-size: 13pt;">I. DATOS PREVIOS</h3>
+        </div>
 
-    html += `<div class="block"><h2>1. Datos de la Empresa</h2>
-      <table><tr>
-        <td style="vertical-align:top; width:65%;">
-          <table style="margin:0;">
-            <tr><th>Denominación</th><td>${i.centroTrabajo.denominacion}</td></tr>
-            <tr><th>Domicilio</th><td>${i.centroTrabajo.domicilio}</td></tr>
-            <tr><th>Evaluador</th><td>${i.evaluador}</td></tr>
-            <tr><th>Fecha de verificación</th><td>${i.fechaVerificacion}</td></tr>
-          </table>
-        </td>
-        <td style="vertical-align:top; width:35%; text-align:center;">
-          ${logo ? `<img class="logo-print" src="${logo}" alt="Logo de la empresa" />` : "<em>Sin logo</em>"}
-        </td>
-      </tr></table>
+        <!-- 1. Datos de la Empresa -->
+        <div style="margin-bottom: 15px; page-break-inside: avoid; break-inside: avoid;">
+            <h4 style="font-size: 11pt; color: #0c4a6e; margin: 8px 0 5px 0;">1. Datos de la Empresa</h4>
+            <table style="width: 100%; border-collapse: collapse; font-size: 9pt; border: 1px solid #999;">
+                <tr>
+                    <td style="vertical-align: top; padding: 8px; width: 65%; border: 1px solid #999;">
+                        <table style="width: 100%; border-collapse: collapse; margin: 0; border: none;">
+                            <tr><td style="padding: 4px 6px; border: none; font-weight: bold; width: 35%;">Denominación</td>
+                                <td style="padding: 4px 6px; border: none;">${i.centroTrabajo.denominacion || 'No especificado'}</td></tr>
+                            <tr><td style="padding: 4px 6px; border: none; font-weight: bold;">Domicilio</td>
+                                <td style="padding: 4px 6px; border: none;">${i.centroTrabajo.domicilio || 'No especificado'}</td></tr>
+                            <tr><td style="padding: 4px 6px; border: none; font-weight: bold;">Evaluador</td>
+                                <td style="padding: 4px 6px; border: none;">${i.evaluador || 'No especificado'}</td></tr>
+                            <tr><td style="padding: 4px 6px; border: none; font-weight: bold;">Fecha de verificación</td>
+                                <td style="padding: 4px 6px; border: none;">${i.fechaVerificacion || 'No especificada'}</td></tr>
+                        </table>
+                    </td>
+                    <td style="vertical-align: middle; padding: 8px; width: 35%; text-align: center; border: 1px solid #999;">
+                        ${logo ? `<img src="${logo}" style="max-width: 200px; max-height: 100px; border: 1px solid #ddd; padding: 5px;" alt="Logo de la empresa" />` : '<span style="color: #999;">Sin logo</span>'}
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- 2. Datos del Trabajador -->
+        <div style="margin-bottom: 15px; page-break-inside: avoid; break-inside: avoid;">
+            <h4 style="font-size: 11pt; color: #0c4a6e; margin: 8px 0 5px 0;">2. Datos del Trabajador</h4>
+            <table style="width: 100%; border-collapse: collapse; font-size: 9pt; border: 1px solid #999;">
+                <tr>
+                    <td style="vertical-align: top; padding: 8px; width: 65%; border: 1px solid #999;">
+                        <table style="width: 100%; border-collapse: collapse; margin: 0; border: none;">
+                            <tr><td style="padding: 4px 6px; border: none; font-weight: bold; width: 35%;">Nombre</td>
+                                <td style="padding: 4px 6px; border: none;">${i.trabajador.nombre || 'No especificado'}</td></tr>
+                            <tr><td style="padding: 4px 6px; border: none; font-weight: bold;">Género</td>
+                                <td style="padding: 4px 6px; border: none;">${i.trabajador.genero || 'No especificado'}</td></tr>
+                            <tr><td style="padding: 4px 6px; border: none; font-weight: bold;">Edad</td>
+                                <td style="padding: 4px 6px; border: none;">${i.trabajador.edad || 'No especificada'}</td></tr>
+                            <tr><td style="padding: 4px 6px; border: none; font-weight: bold;">Puesto</td>
+                                <td style="padding: 4px 6px; border: none;">${i.trabajador.puesto || 'No especificado'}</td></tr>
+                            <tr><td style="padding: 4px 6px; border: none; font-weight: bold;">Área</td>
+                                <td style="padding: 4px 6px; border: none;">${i.trabajador.area || 'No especificada'}</td></tr>
+                        </table>
+                    </td>
+                    <td style="vertical-align: middle; padding: 8px; width: 35%; text-align: center; border: 1px solid #999;">
+                        ${foto ? `<img src="${foto}" style="max-width: 250px; max-height: 180px; border: 1px solid #ddd; padding: 5px;" alt="Evidencia fotográfica" />` : '<span style="color: #999;">Sin evidencia fotográfica</span>'}
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- 3. Condiciones Ambientales -->
+        <div style="margin-bottom: 15px; page-break-inside: avoid; break-inside: avoid;">
+            <h4 style="font-size: 11pt; color: #0c4a6e; margin: 8px 0 5px 0;">3. Condiciones Ambientales</h4>
+            <table style="width: 100%; border-collapse: collapse; font-size: 9pt; border: 1px solid #999;">
+                <tr><td style="padding: 4px 8px; border: 1px solid #999; font-weight: bold; width: 30%;">Ruido</td>
+                    <td style="padding: 4px 8px; border: 1px solid #999;">${i.condicionesAmbientales.ruido || 'N/A'}</td></tr>
+                <tr><td style="padding: 4px 8px; border: 1px solid #999; font-weight: bold;">Iluminación</td>
+                    <td style="padding: 4px 8px; border: 1px solid #999;">${i.condicionesAmbientales.iluminacion || 'N/A'}</td></tr>
+                <tr><td style="padding: 4px 8px; border: 1px solid #999; font-weight: bold;">Ventilación</td>
+                    <td style="padding: 4px 8px; border: 1px solid #999;">${i.condicionesAmbientales.ventilacion || 'N/A'}</td></tr>
+                <tr><td style="padding: 4px 8px; border: 1px solid #999; font-weight: bold;">Temperatura</td>
+                    <td style="padding: 4px 8px; border: 1px solid #999;">${i.condicionesAmbientales.temperatura || 'N/A'}</td></tr>
+                <tr><td style="padding: 4px 8px; border: 1px solid #999; font-weight: bold;">Vibraciones</td>
+                    <td style="padding: 4px 8px; border: 1px solid #999;">${i.condicionesAmbientales.vibraciones || 'N/A'}</td></tr>
+                <tr><td style="padding: 4px 8px; border: 1px solid #999; font-weight: bold;">Contaminantes químicos</td>
+                    <td style="padding: 4px 8px; border: 1px solid #999;">${i.condicionesAmbientales.contaminantesQuimicos || 'N/A'}</td></tr>
+            </table>
+        </div>
+
+        <!-- 4. Equipos, Carga Física y Atención -->
+        <div style="margin-bottom: 15px; page-break-inside: avoid; break-inside: avoid;">
+            <h4 style="font-size: 11pt; color: #0c4a6e; margin: 8px 0 5px 0;">4. Equipos, Carga Física y Atención</h4>
+            <table style="width: 100%; border-collapse: collapse; font-size: 9pt; border: 1px solid #999;">
+                <tr><td style="padding: 4px 8px; border: 1px solid #999; font-weight: bold; width: 30%;">Equipos/Herramientas</td>
+                    <td style="padding: 4px 8px; border: 1px solid #999;">${i.equiposHerramientas || 'N/A'}</td></tr>
+                <tr><td style="padding: 4px 8px; border: 1px solid #999; font-weight: bold;">Carga física manual</td>
+                    <td style="padding: 4px 8px; border: 1px solid #999;">Empuja: ${i.cargaFisicaManual.empuja ? '✓' : '✗'} · Jala: ${i.cargaFisicaManual.jala ? '✓' : '✗'} · Levanta: ${i.cargaFisicaManual.levanta ? '✓' : '✗'}</td></tr>
+                <tr><td style="padding: 4px 8px; border: 1px solid #999; font-weight: bold;">Nivel de atención requerido</td>
+                    <td style="padding: 4px 8px; border: 1px solid #999;">${i.nivelAtencionRequerido || 'N/A'}</td></tr>
+            </table>
+        </div>
+
+        <!-- 5. Factores de Vulnerabilidad -->
+        <div style="margin-bottom: 15px; page-break-inside: avoid; break-inside: avoid;">
+            <h4 style="font-size: 11pt; color: #0c4a6e; margin: 8px 0 5px 0;">5. Factores de Vulnerabilidad</h4>
+            <table style="width: 100%; border-collapse: collapse; font-size: 9pt; border: 1px solid #999;">
+                <tr><td style="padding: 4px 8px; border: 1px solid #999; font-weight: bold; width: 30%;">Estado de salud previo</td>
+                    <td style="padding: 4px 8px; border: 1px solid #999;">${i.factoresVulnerabilidad.estadoSaludPrevio ? '✓' : '✗'}</td></tr>
+                <tr><td style="padding: 4px 8px; border: 1px solid #999; font-weight: bold;">Gravidez</td>
+                    <td style="padding: 4px 8px; border: 1px solid #999;">${i.factoresVulnerabilidad.gravidez ? '✓' : '✗'}</td></tr>
+                <tr><td style="padding: 4px 8px; border: 1px solid #999; font-weight: bold;">Otro factor</td>
+                    <td style="padding: 4px 8px; border: 1px solid #999;">${i.factoresVulnerabilidad.otro ? '✓' : '✗'}</td></tr>
+                <tr><td style="padding: 4px 8px; border: 1px solid #999; font-weight: bold;">Detalle</td>
+                    <td style="padding: 4px 8px; border: 1px solid #999;">${i.factoresVulnerabilidad.detalle || 'N/A'}</td></tr>
+            </table>
+        </div>
+
+        <!-- ======================= II. ANÁLISIS ======================= -->
+        <div style="background: #f0f7ff; padding: 10px 15px; margin: 20px 0 10px 0; border-left: 4px solid #0c4a6e;">
+            <h3 style="margin: 0; color: #0c4a6e; font-size: 13pt;">II. ANÁLISIS DE RIESGO POR BIPEDESTACIÓN</h3>
+        </div>
+
+        <!-- 1. Clasificación de Bipedestación -->
+        <div style="margin-bottom: 15px; page-break-inside: avoid; break-inside: avoid;">
+            <h4 style="font-size: 11pt; color: #0c4a6e; margin: 8px 0 5px 0;">1. Clasificación de la Bipedestación</h4>
+            <table style="width: 100%; border-collapse: collapse; font-size: 9pt; border: 1px solid #999;">
+                <tr><td style="padding: 8px; border: 1px solid #999; font-weight: bold; width: 30%;">Tipo</td>
+                    <td style="padding: 8px; border: 1px solid #999;">${r.clasificacionBipedestacion.join(', ') || 'No especificada'}</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid #999; font-weight: bold;">Tiempo continuo</td>
+                    <td style="padding: 8px; border: 1px solid #999;">${i.bipedestacion.tiempoContinuoHoras || 0} horas</td></tr>
+            </table>
+        </div>
+
+        <!-- 2. Puntaje de las Siete Condicionantes -->
+        <div style="margin-bottom: 15px; page-break-inside: avoid; break-inside: avoid;">
+            <h4 style="font-size: 11pt; color: #0c4a6e; margin: 8px 0 5px 0;">2. Puntaje de las Siete Condicionantes (Inciso D)</h4>
+            <table style="width: 100%; border-collapse: collapse; font-size: 9pt; border: 1px solid #999;">
+                <tr style="background: #e8f4f8;">
+                    <th style="padding: 6px 8px; border: 1px solid #999; text-align: left;">Condicionante</th>
+                    <th style="padding: 6px 8px; border: 1px solid #999; text-align: center; width: 80px;">Puntaje</th>
+                </tr>`;
+    
+    const condicionantes = [
+        { key: 'a', label: 'a) Tiempo de pie sin descanso en posición sedente' },
+        { key: 'b', label: 'b) Posibilidad de cambiar de postura' },
+        { key: 'c', label: 'c) Tipo de superficie de trabajo' },
+        { key: 'd', label: 'd) Características del calzado utilizado' },
+        { key: 'e', label: 'e) Espacio disponible para moverse' },
+        { key: 'f', label: 'f) Malestares reportados' },
+        { key: 'g', label: 'g) Pausas, tareas alternas o complementarias' }
+    ];
+    
+    condicionantes.forEach(item => {
+        const valor = f[item.label] || 1;
+        let bgColor = '';
+        if (valor === 1) bgColor = 'background: #bbf7d0;';
+        else if (valor === 2) bgColor = 'background: #fef08a;';
+        else if (valor === 3) bgColor = 'background: #fecaca;';
+        
+        html += `<tr>
+            <td style="padding: 6px 8px; border: 1px solid #999;">${item.label}</td>
+            <td style="padding: 6px 8px; border: 1px solid #999; text-align: center; font-weight: bold; ${bgColor}">${valor}</td>
+        </tr>`;
+    });
+    
+    html += `
+            </table>
+        </div>
+
+        <!-- 3. Puntaje Total -->
+        <div style="margin: 15px 0; page-break-inside: avoid; break-inside: avoid;">
+            <div style="background: ${r.evaluacionRiesgo.nivel === 'BAJO' ? '#16803c' : r.evaluacionRiesgo.nivel === 'MEDIO' ? '#b45309' : '#b91c1c'}; 
+                        color: white; 
+                        padding: 15px; 
+                        text-align: center; 
+                        border-radius: 8px;
+                        font-size: 14pt;
+                        font-weight: bold;">
+                PUNTAJE TOTAL: ${r.evaluacionRiesgo.puntajeTotal} / 21 — NIVEL DE RIESGO: ${r.evaluacionRiesgo.nivel}
+            </div>
+        </div>
+
+        <!-- ======================= III. RECOMENDACIONES ======================= -->
+        <div style="background: #f0f7ff; padding: 10px 15px; margin: 20px 0 10px 0; border-left: 4px solid #0c4a6e;">
+            <h3 style="margin: 0; color: #0c4a6e; font-size: 13pt;">III. MATRIZ DE RECOMENDACIONES</h3>
+        </div>
+
+        <!-- 1. Selección de Asiento -->
+        <div style="margin-bottom: 15px; page-break-inside: avoid; break-inside: avoid;">
+            <h4 style="font-size: 11pt; color: #0c4a6e; margin: 8px 0 5px 0;">1. Selección de Asiento/Silla</h4>
+            <table style="width: 100%; border-collapse: collapse; font-size: 9pt; border: 1px solid #999;">
+                <tr>
+                    <td style="padding: 8px; border: 1px solid #999; width: 25%; text-align: center; vertical-align: middle;">
+                        ${SEAT_ICONS[r.recomendaciones.tipoAsientoKey] || '<span style="color: #999;">Sin ícono</span>'}
+                    </td>
+                    <td style="padding: 8px; border: 1px solid #999; width: 75%; vertical-align: top;">
+                        <p style="margin: 0 0 5px 0; font-weight: bold;">Recomendación:</p>
+                        <p style="margin: 0;">${r.recomendaciones.asiento}</p>
+                        <p style="margin: 5px 0 0 0; font-size: 8pt; color: #555;">
+                            <strong>Criterios legales:</strong> ${r.recomendaciones.criteriosLegalesAsiento.join(' • ')}
+                        </p>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- 2. Medidas Técnico-Administrativas -->
+        <div style="margin-bottom: 20px; page-break-inside: avoid; break-inside: avoid;">
+            <h4 style="font-size: 11pt; color: #0c4a6e; margin: 8px 0 5px 0;">2. Medidas Técnico-Administrativas Preventivas</h4>
+            <table style="width: 100%; border-collapse: collapse; font-size: 9pt; border: 1px solid #999;">
+                <tr><td style="padding: 8px; border: 1px solid #999;">
+                    <ul style="margin: 0; padding-left: 20px;">`;
+    
+    r.recomendaciones.administrativas.forEach(a => {
+        html += `<li style="margin-bottom: 3px;">${a}</li>`;
+    });
+    
+    html += `
+                    </ul>
+                </td></tr>
+            </table>
+        </div>
+
+        <!-- ======================= IV. FIRMAS ======================= -->
+        <div style="margin-top: 30px; page-break-inside: avoid; break-inside: avoid;">
+            <div style="background: #f0f7ff; padding: 10px 15px; margin: 20px 0 10px 0; border-left: 4px solid #0c4a6e;">
+                <h3 style="margin: 0; color: #0c4a6e; font-size: 13pt;">IV. FIRMAS Y VALIDACIÓN</h3>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <!-- Firma del Evaluador -->
+                <div style="display: inline-block; width: 45%; vertical-align: top; margin-right: 5%;">
+                    <div style="border-top: 2px solid #333; width: 100%; padding-top: 10px; margin-top: 30px; text-align: center;">
+                        <p style="margin: 0; font-size: 10pt; font-weight: bold;">${i.evaluador || '_________________________'}</p>
+                        <p style="margin: 2px 0 0 0; font-size: 8pt; color: #555;">Nombre y firma de quien evalúa</p>
+                    </div>
+                </div>
+                
+                <!-- Firma del Trabajador -->
+                <div style="display: inline-block; width: 45%; vertical-align: top;">
+                    <div style="border-top: 2px solid #333; width: 100%; padding-top: 10px; margin-top: 30px; text-align: center;">
+                        <p style="margin: 0; font-size: 10pt; font-weight: bold;">${i.trabajador.nombre || '_________________________'}</p>
+                        <p style="margin: 2px 0 0 0; font-size: 8pt; color: #555;">Nombre y firma del trabajador</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sello -->
+            <div style="text-align: center; margin-top: 30px;">
+                <div style="border: 2px dashed #999; border-radius: 10px; padding: 15px; display: inline-block;">
+                    <p style="margin: 0; font-size: 8pt; color: #555;">Espacio para el sello de la empresa</p>
+                    <p style="margin: 5px 0 0 0; font-size: 9pt; color: #0c4a6e; font-weight: bold;">${i.centroTrabajo.denominacion || ''}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pie de página -->
+        <div style="margin-top: 30px; text-align: center; font-size: 8pt; color: #777; border-top: 1px solid #ddd; padding-top: 10px;">
+            <p style="margin: 0;">Elaborado por Sheila Vázquez para Tips.</p>
+            <p style="margin: 2px 0 0 0;">Documento generado electrónicamente - ${new Date().toLocaleDateString('es-MX')}</p>
+        </div>
     </div>`;
-
-    html += `<div class="block"><h2>2. Datos del Trabajador</h2>
-      <table><tr>
-        <td style="vertical-align:top; width:65%;">
-          <table style="margin:0;">
-            <tr><th>Nombre</th><td>${i.trabajador.nombre}</td></tr>
-            <tr><th>Género</th><td>${i.trabajador.genero}</td></tr>
-            <tr><th>Edad</th><td>${i.trabajador.edad}</td></tr>
-            <tr><th>Puesto</th><td>${i.trabajador.puesto}</td></tr>
-            <tr><th>Área</th><td>${i.trabajador.area}</td></tr>
-          </table>
-        </td>
-        <td style="vertical-align:top; width:35%; text-align:center;">
-          ${foto ? `<img class="evidencia" src="${foto}" alt="Evidencia fotográfica de la actividad" />` : "<em>Sin fotografía</em>"}
-        </td>
-      </tr></table>
-    </div>`;
-
-    html += `<div class="block"><h2>3. Condiciones Ambientales</h2>
-      <table>
-        <tr><th>Ruido</th><td>${i.condicionesAmbientales.ruido || "N/A"}</td></tr>
-        <tr><th>Iluminación</th><td>${i.condicionesAmbientales.iluminacion || "N/A"}</td></tr>
-        <tr><th>Ventilación</th><td>${i.condicionesAmbientales.ventilacion || "N/A"}</td></tr>
-        <tr><th>Temperatura</th><td>${i.condicionesAmbientales.temperatura || "N/A"}</td></tr>
-        <tr><th>Vibraciones</th><td>${i.condicionesAmbientales.vibraciones || "N/A"}</td></tr>
-        <tr><th>Contaminantes químicos</th><td>${i.condicionesAmbientales.contaminantesQuimicos || "N/A"}</td></tr>
-      </table>
-    </div>`;
-
-    html += `<div class="block"><h2>4. Equipos, Carga Física y Atención</h2>
-      <table>
-        <tr><th>Equipos/Herramientas</th><td>${i.equiposHerramientas || "N/A"}</td></tr>
-        <tr><th>Carga física manual</th><td>Empuja: ${i.cargaFisicaManual.empuja ? "Sí" : "No"} · Jala: ${i.cargaFisicaManual.jala ? "Sí" : "No"} · Levanta: ${i.cargaFisicaManual.levanta ? "Sí" : "No"}</td></tr>
-        <tr><th>Nivel de atención requerido</th><td>${i.nivelAtencionRequerido}</td></tr>
-      </table>
-    </div>`;
-
-    html += `<div class="block"><h2>5. Factores de Vulnerabilidad</h2>
-      <table>
-        <tr><th>Estado de salud previo</th><td>${i.factoresVulnerabilidad.estadoSaludPrevio ? "Sí" : "No"}</td></tr>
-        <tr><th>Gravidez</th><td>${i.factoresVulnerabilidad.gravidez ? "Sí" : "No"}</td></tr>
-        <tr><th>Otro factor</th><td>${i.factoresVulnerabilidad.otro ? "Sí" : "No"}</td></tr>
-        <tr><th>Detalle</th><td>${i.factoresVulnerabilidad.detalle || "N/A"}</td></tr>
-      </table>
-    </div>`;
-
-    // ======================= II. ANÁLISIS =======================
-    html += `<div class="seccion-titulo">II. ANÁLISIS DE RIESGO POR BIPEDESTACIÓN</div>`;
-
-    html += `<div class="block"><h2>1. Clasificación de la Bipedestación</h2>
-      <p>${r.clasificacionBipedestacion.join(", ")} — Tiempo continuo: ${i.bipedestacion.tiempoContinuoHoras} h</p>
-    </div>`;
-
-    let tablaFactores = `<table><tr><th>Condicionante</th><th>Puntaje</th></tr>`;
-    for (const [k, v] of Object.entries(f)) {
-      tablaFactores += `<tr><td>${k}</td><td style="${scoreCellStyle(v)}">${v}</td></tr>`;
-    }
-    tablaFactores += `</table>`;
-    html += `<div class="block"><h2>2. Puntaje de las Siete Condicionantes (Inciso D)</h2>${tablaFactores}</div>`;
-
-    html += `<div class="risk-box ${r.evaluacionRiesgo.nivel}" style="${riskBoxStyle(r.evaluacionRiesgo.nivel)}">PUNTAJE TOTAL: ${r.evaluacionRiesgo.puntajeTotal} / 21 — NIVEL DE RIESGO: ${r.evaluacionRiesgo.nivel}</div>`;
-
-    html += `<div class="firma-block">
-      <div class="firma-linea">Nombre y firma de quien evalúa</div>
-      <p>${i.evaluador}</p>
-    </div>`;
-
-    // ======================= III. RECOMENDACIONES =======================
-    html += `<div class="seccion-titulo">III. MATRIZ DE RECOMENDACIONES</div>`;
-    html += `<div class="block"><h2>1. Selección de Asiento/Silla</h2>
-      <table><tr>
-        <td style="vertical-align:top; width:25%;" class="seat-icon-wrap">${SEAT_ICONS[r.recomendaciones.tipoAsientoKey] || ""}</td>
-        <td style="vertical-align:top; width:75%;"><p style="margin:0;">${r.recomendaciones.asiento}</p></td>
-      </tr></table>
-    </div>`;
-    html += `<div class="block"><h2>2. Medidas Técnico-Administrativas</h2><ul>`;
-    r.recomendaciones.administrativas.forEach(a => html += `<li>${a}</li>`);
-    html += `</ul></div>`;
-
-    html += `<p class="pie-print">Elaborado por Sheila Vázquez para Tips.</p>`;
 
     return html;
   }
@@ -1233,6 +1758,40 @@ ${innerHtml}
 </body>
 </html>`;
   }
+
+  // ============================================================
+  // EVENTOS DEL FORMULARIO
+  // ============================================================
+
+  form.addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    if (!fotoInput.files || fotoInput.files.length === 0) {
+      alert("Debe adjuntar una fotografía de la actividad del puesto de trabajo antes de evaluar el riesgo.");
+      return;
+    }
+
+    const fotoDataUrl = await readFileAsDataURL(fotoInput.files[0]);
+
+    const data = collectFormData();
+    data.evidenciaFotografica = {
+      nombreArchivo: fotoInput.files[0].name,
+      dataUrl: fotoDataUrl
+    };
+
+    const resultado = evaluar(data);
+    render(resultado);
+    window.__ultimoResultado = resultado;
+
+    await guardarEvaluacion(data, resultado);
+  });
+
+  // ============================================================
+  // EVENTOS DE HISTORIAL
+  // ============================================================
+
+  document.getElementById('btnCargarHistorial').addEventListener('click', mostrarHistorial);
+  document.getElementById('btnRefrescarHistorial').addEventListener('click', mostrarHistorial);
 
 })();
 </script>
