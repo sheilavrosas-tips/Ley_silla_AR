@@ -1,0 +1,189 @@
+// ==================== EVENTOS DE HISTORIAL ====================
+
+// Mostrar historial
+async function mostrarHistorial() {
+    const contenedor = document.getElementById('historialList');
+    contenedor.innerHTML = '<p style="color:var(--muted);">Cargando historial...</p>';
+    
+    const historial = await cargarHistorial();
+    
+    if (historial.length === 0) {
+        contenedor.innerHTML = '<p style="color:var(--muted);">📭 No hay evaluaciones guardadas.</p>';
+        document.getElementById('historialCard').style.display = 'block';
+        return;
+    }
+
+    let html = '<table style="width:100%; border-collapse:collapse; font-size:0.75rem;">';
+    html += `<thead>
+        <tr style="background:var(--panel-2);">
+            <th style="padding:6px 8px; text-align:left;">Fecha</th>
+            <th style="padding:6px 8px; text-align:left;">Evaluador</th>
+            <th style="padding:6px 8px; text-align:left;">Trabajador</th>
+            <th style="padding:6px 8px; text-align:center;">Puntaje</th>
+            <th style="padding:6px 8px; text-align:center;">Nivel</th>
+            <th style="padding:6px 8px; text-align:center;">Acciones</th>
+        </tr>
+    </thead><tbody>`;
+    
+    historial.forEach(item => {
+        const nivelClass = (item.nivel_riesgo || '').toLowerCase();
+        const bgColor = nivelClass === 'bajo' ? '#14532d' : nivelClass === 'medio' ? '#422006' : '#450a0a';
+        const textColor = nivelClass === 'bajo' ? '#22c55e' : nivelClass === 'medio' ? '#eab308' : '#ef4444';
+        
+        html += `<tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:6px 8px;">${new Date(item.created_at).toLocaleDateString('es-MX')}</td>
+            <td style="padding:6px 8px;">${item.evaluador || '-'}</td>
+            <td style="padding:6px 8px;">${item.nombre || '-'}</td>
+            <td style="padding:6px 8px; text-align:center;">${item.puntaje_total || 0}/21</td>
+            <td style="padding:6px 8px; text-align:center;">
+                <span style="background:${bgColor}; color:${textColor}; padding:2px 10px; border-radius:12px; font-weight:700; font-size:0.7rem; display:inline-block;">
+                    ${item.nivel_riesgo || 'N/A'}
+                </span>
+            </td>
+            <td style="padding:6px 8px; text-align:center;">
+                <button onclick="cargarEvaluacionYRenderizar('${item.id}')" 
+                        style="padding:2px 8px; font-size:0.7rem; background:var(--accent); border:none; border-radius:4px; cursor:pointer; margin-right:4px;">
+                    📖 Cargar
+                </button>
+                <button onclick="eliminarEvaluacionYRecargar('${item.id}')" 
+                        style="padding:2px 8px; font-size:0.7rem; background:#450a0a; color:#fecaca; border:1px solid #7f1d1d; border-radius:4px; cursor:pointer;">
+                    🗑️
+                </button>
+            </td>
+        </tr>`;
+    });
+    
+    html += '</tbody></table>';
+    contenedor.innerHTML = html;
+    document.getElementById('historialCard').style.display = 'block';
+}
+
+// Función global para cargar evaluación
+window.cargarEvaluacionYRenderizar = async function(id) {
+    const data = await cargarEvaluacion(id);
+    if (!data) {
+        alert('❌ No se pudo cargar la evaluación');
+        return;
+    }
+
+    // Reconstruir el objeto de entrada
+    const input = {
+        centroTrabajo: data.centro_trabajo || {},
+        evaluador: data.evaluador || '',
+        fechaVerificacion: data.fecha_verificacion || '',
+        trabajador: data.trabajador || {},
+        condicionesAmbientales: data.condiciones_ambientales || {},
+        equiposHerramientas: data.equipos_herramientas || '',
+        cargaFisicaManual: data.carga_fisica || {},
+        nivelAtencionRequerido: data.nivel_atencion || 'Visual',
+        factoresVulnerabilidad: data.vulnerabilidad || {},
+        bipedestacion: data.bipedestacion || { tiempoContinuoHoras: 0 },
+        condicionantes: data.condicionantes || { a:1, b:1, c:1, d:1, e:1, f:1, g:1 },
+        restriccionesIlegales: data.restricciones_ilegales || {},
+        evidenciaFotografica: {
+            dataUrl: data.evidencia_foto || null,
+            nombreArchivo: 'cargado_historial'
+        }
+    };
+
+    // Recalcular resultado
+    const resultado = evaluar(input);
+    render(resultado);
+    window.__ultimoResultado = resultado;
+    
+    // Llenar formulario
+    llenarFormulario(input);
+    
+    // Mostrar foto si existe
+    if (input.evidenciaFotografica.dataUrl) {
+        fotoPreview.src = input.evidenciaFotografica.dataUrl;
+        fotoPreview.style.display = 'block';
+    }
+    
+    document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+};
+
+// Función para eliminar evaluación
+window.eliminarEvaluacionYRecargar = async function(id) {
+    const eliminado = await eliminarEvaluacion(id);
+    if (eliminado) {
+        await mostrarHistorial();
+    }
+};
+
+// Función para llenar formulario con datos cargados
+function llenarFormulario(input) {
+    document.getElementById('ctNombre').value = input.centroTrabajo.denominacion || '';
+    document.getElementById('ctDomicilio').value = input.centroTrabajo.domicilio || '';
+    document.getElementById('evaluador').value = input.evaluador || '';
+    document.getElementById('fechaVerificacion').value = input.fechaVerificacion || '';
+    
+    document.getElementById('trabNombre').value = input.trabajador.nombre || '';
+    document.getElementById('trabGenero').value = input.trabajador.genero || 'Femenino';
+    document.getElementById('trabEdad').value = input.trabajador.edad || '';
+    document.getElementById('trabPuesto').value = input.trabajador.puesto || '';
+    document.getElementById('trabArea').value = input.trabajador.area || '';
+    
+    document.getElementById('ambRuido').value = input.condicionesAmbientales.ruido || '';
+    document.getElementById('ambIlum').value = input.condicionesAmbientales.iluminacion || '';
+    document.getElementById('ambVent').value = input.condicionesAmbientales.ventilacion || '';
+    document.getElementById('ambTemp').value = input.condicionesAmbientales.temperatura || '';
+    document.getElementById('ambVibra').value = input.condicionesAmbientales.vibraciones || '';
+    document.getElementById('ambQuim').value = input.condicionesAmbientales.contaminantesQuimicos || '';
+    
+    document.getElementById('equipos').value = input.equiposHerramientas || '';
+    document.getElementById('cargaEmpuja').checked = input.cargaFisicaManual.empuja || false;
+    document.getElementById('cargaJala').checked = input.cargaFisicaManual.jala || false;
+    document.getElementById('cargaLevanta').checked = input.cargaFisicaManual.levanta || false;
+    document.getElementById('atencion').value = input.nivelAtencionRequerido || 'Visual';
+    
+    document.getElementById('vulnSalud').checked = input.factoresVulnerabilidad.estadoSaludPrevio || false;
+    document.getElementById('vulnGravidez').checked = input.factoresVulnerabilidad.gravidez || false;
+    document.getElementById('vulnOtro').checked = input.factoresVulnerabilidad.otro || false;
+    document.getElementById('vulnDetalle').value = input.factoresVulnerabilidad.detalle || '';
+    
+    document.getElementById('postEstatica').checked = input.bipedestacion.estatica || false;
+    document.getElementById('postDinamica').checked = input.bipedestacion.dinamica || false;
+    document.getElementById('tiempoContinuo').value = input.bipedestacion.tiempoContinuoHoras || 0;
+    
+    document.getElementById('fa').value = input.condicionantes.a || 1;
+    document.getElementById('fb').value = input.condicionantes.b || 1;
+    document.getElementById('fc').value = input.condicionantes.c || 1;
+    document.getElementById('fd').value = input.condicionantes.d || 1;
+    document.getElementById('fe').value = input.condicionantes.e || 1;
+    document.getElementById('ff').value = input.condicionantes.f || 1;
+    document.getElementById('fg').value = input.condicionantes.g || 1;
+    
+    document.getElementById('obligaSiempreDePie').checked = input.restriccionesIlegales.obligaSiempreDePie || false;
+    document.getElementById('prohibidoSentarse').checked = input.restriccionesIlegales.prohibidoSentarse || false;
+}
+
+// Eventos de historial
+document.getElementById('btnCargarHistorial').addEventListener('click', mostrarHistorial);
+document.getElementById('btnRefrescarHistorial').addEventListener('click', mostrarHistorial);
+
+// Modificar el evento submit para guardar en Supabase
+const originalSubmit = form.addEventListener;
+form.addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    if (!fotoInput.files || fotoInput.files.length === 0) {
+        alert("Debe adjuntar una fotografía de la actividad del puesto de trabajo antes de evaluar el riesgo.");
+        return;
+    }
+
+    const fotoDataUrl = await readFileAsDataURL(fotoInput.files[0]);
+
+    const data = collectFormData();
+    data.evidenciaFotografica = {
+        nombreArchivo: fotoInput.files[0].name,
+        dataUrl: fotoDataUrl
+    };
+
+    const resultado = evaluar(data);
+    render(resultado);
+    window.__ultimoResultado = resultado;
+
+    // 👇 GUARDAR EN SUPABASE
+    await guardarEvaluacion(data, resultado);
+});
