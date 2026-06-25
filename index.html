@@ -286,6 +286,209 @@
   #historialList tr:hover {
     background: var(--panel-2);
   }
+
+  /* Estilos para pestañas */
+  .tab-btn {
+    background: transparent;
+    color: var(--text);
+    border: none;
+    padding: 12px 24px;
+    cursor: pointer;
+    font-weight: 600;
+    border-radius: 8px 8px 0 0;
+    transition: all 0.3s;
+    font-size: 0.9rem;
+  }
+
+  .tab-btn:hover {
+    background: var(--panel);
+    color: var(--accent);
+  }
+
+  .tab-btn.active {
+    background: var(--accent);
+    color: #0c1b2a;
+  }
+
+  .tab-pane {
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Estilos para la tabla del historial completo */
+  .historial-completo-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    background: var(--panel);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .historial-completo-table th {
+    background: var(--panel-2);
+    color: var(--accent);
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .historial-completo-table td {
+    padding: 10px 15px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .historial-completo-table tr:hover {
+    background: var(--panel-2);
+  }
+
+  /* Filtros del historial */
+  .filtros-historial {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+    background: var(--panel);
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+
+  .filtros-historial input,
+  .filtros-historial select {
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    font-size: 0.85rem;
+  }
+
+  .filtros-historial label {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  /* Paginación */
+  .paginacion {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+
+  .paginacion button {
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+  }
+
+  .paginacion button.active {
+    background: var(--accent);
+    color: #0c1b2a;
+    font-weight: 600;
+  }
+
+  .paginacion button:hover:not(.active) {
+    background: var(--panel);
+  }
+
+  /* Badge de estado */
+  .badge-estado {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.75rem;
+    display: inline-block;
+  }
+
+  .badge-estado.BAJO { background: #14532d; color: #22c55e; }
+  .badge-estado.MEDIO { background: #422006; color: #eab308; }
+  .badge-estado.ALTO { background: #450a0a; color: #ef4444; }
+
+  /* Modal para ver detalles */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 20px;
+  }
+
+  .modal-content {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 30px;
+    max-width: 800px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .modal-content h2 {
+    color: var(--accent);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+  }
+
+  .modal-close {
+    float: right;
+    background: var(--red);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    font-size: 1.2rem;
+    cursor: pointer;
+  }
+
+  /* Estadísticas del historial */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+
+  .stat-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+  }
+
+  .stat-card .numero {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .stat-card .label {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 4px;
+  }
 </style>
 </head>
 <body>
@@ -310,273 +513,299 @@
   <p>SOFTWARE LEY SILLA, VERSION 2.1, BRAINTECH.</p>
 </header>
 
-<div class="container">
+<!-- ===== NAVEGACIÓN POR PESTAÑAS ===== -->
+<div style="background: var(--panel-2); border-bottom: 1px solid var(--border); padding: 0 24px;">
+    <div style="display: flex; gap: 4px; max-width: 1200px; margin: 0 auto;">
+        <button class="tab-btn active" data-tab="evaluacion" style="background: var(--accent); color: #0c1b2a; border: none; padding: 12px 24px; cursor: pointer; font-weight: 600; border-radius: 8px 8px 0 0; transition: all 0.3s;">
+            📝 Nueva Evaluación
+        </button>
+        <button class="tab-btn" data-tab="historial" style="background: transparent; color: var(--text); border: none; padding: 12px 24px; cursor: pointer; font-weight: 600; border-radius: 8px 8px 0 0; transition: all 0.3s;">
+            📋 Historial Completo
+        </button>
+    </div>
+</div>
 
-  <!-- ===================== COLUMNA IZQUIERDA: FORMULARIO ===================== -->
-  <div>
+<!-- Contenedor de pestañas -->
+<div id="tabContent">
+    <!-- Pestaña 1: Evaluación -->
+    <div id="tabEvaluacion" class="tab-pane active">
+        <div class="container">
 
-    <form id="evalForm">
+            <!-- ===================== COLUMNA IZQUIERDA: FORMULARIO ===================== -->
+            <div>
 
-      <div class="card">
-        <h2>1. Datos Generales del Centro de Trabajo</h2>
-        <div class="grid-2">
-          <div>
-            <label>Denominación del Centro de Trabajo</label>
-            <input type="text" id="ctNombre" required />
-          </div>
-          <div>
-            <label>Domicilio</label>
-            <input type="text" id="ctDomicilio" required />
-          </div>
+                <form id="evalForm">
+
+                    <div class="card">
+                        <h2>1. Datos Generales del Centro de Trabajo</h2>
+                        <div class="grid-2">
+                            <div>
+                                <label>Denominación del Centro de Trabajo</label>
+                                <input type="text" id="ctNombre" required />
+                            </div>
+                            <div>
+                                <label>Domicilio</label>
+                                <input type="text" id="ctDomicilio" required />
+                            </div>
+                        </div>
+                        <div class="grid-2">
+                            <div>
+                                <label>Evaluador</label>
+                                <input type="text" id="evaluador" required />
+                            </div>
+                            <div>
+                                <label>Fecha de Verificación</label>
+                                <input type="date" id="fechaVerificacion" required />
+                            </div>
+                        </div>
+                        <label>Logo de la Empresa (opcional)</label>
+                        <div id="logoDropzone" class="dropzone">
+                            <span id="logoDropzoneText">Arrastra el logo aquí o haz clic para seleccionarlo</span>
+                            <img id="logoPreview" alt="Logo de la empresa" style="display:none;" />
+                        </div>
+                        <input type="file" id="logoEmpresaInput" accept="image/*" style="display:none" />
+                    </div>
+
+                    <div class="card">
+                        <h2>2. Datos del Trabajador</h2>
+                        <div class="grid-3">
+                            <div>
+                                <label>Nombre</label>
+                                <input type="text" id="trabNombre" required />
+                            </div>
+                            <div>
+                                <label>Género</label>
+                                <select id="trabGenero">
+                                    <option value="Femenino">Femenino</option>
+                                    <option value="Masculino">Masculino</option>
+                                    <option value="Otro/No especifica">Otro / No especifica</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Edad</label>
+                                <input type="number" id="trabEdad" min="14" max="100" required />
+                            </div>
+                        </div>
+                        <div class="grid-2">
+                            <div>
+                                <label>Puesto de Trabajo</label>
+                                <input type="text" id="trabPuesto" required />
+                            </div>
+                            <div>
+                                <label>Área</label>
+                                <input type="text" id="trabArea" required />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h2>3. Condiciones Ambientales del Área</h2>
+                        <div class="grid-3">
+                            <div><label>Ruido</label><input type="text" id="ambRuido" placeholder="ej. 78 dB" /></div>
+                            <div><label>Iluminación</label><input type="text" id="ambIlum" placeholder="ej. 350 lux" /></div>
+                            <div><label>Ventilación</label><input type="text" id="ambVent" placeholder="ej. Natural/Mecánica" /></div>
+                            <div><label>Temperatura</label><input type="text" id="ambTemp" placeholder="ej. 24°C" /></div>
+                            <div><label>Vibraciones</label><input type="text" id="ambVibra" placeholder="ej. Ninguna/Baja" /></div>
+                            <div><label>Contaminantes químicos</label><input type="text" id="ambQuim" placeholder="ej. Ninguno" /></div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h2>4. Equipos, Carga Física y Atención Requerida</h2>
+                        <label>Maquinaria/Herramientas utilizadas</label>
+                        <textarea id="equipos" placeholder="ej. Banda transportadora, pistola de calor, herramienta manual..."></textarea>
+                        <div class="grid-3">
+                            <div class="checkbox-row"><input type="checkbox" id="cargaEmpuja" /><label style="margin:0">Empuja objetos</label></div>
+                            <div class="checkbox-row"><input type="checkbox" id="cargaJala" /><label style="margin:0">Jala objetos</label></div>
+                            <div class="checkbox-row"><input type="checkbox" id="cargaLevanta" /><label style="margin:0">Levanta objetos</label></div>
+                        </div>
+                        <label>Nivel de atención requerido</label>
+                        <select id="atencion">
+                            <option value="Visual">Visual</option>
+                            <option value="Auditiva">Auditiva</option>
+                            <option value="Motora">Motora</option>
+                            <option value="Visual y Motora">Visual y Motora</option>
+                            <option value="Visual, Auditiva y Motora">Visual, Auditiva y Motora</option>
+                        </select>
+                    </div>
+
+                    <div class="card">
+                        <h2>5. Factores Biológicos / Vulnerabilidad</h2>
+                        <div class="checkbox-row"><input type="checkbox" id="vulnSalud" /><label style="margin:0">Estado de salud previo relevante (lesión, varices, problema circulatorio/articular, etc.)</label></div>
+                        <div class="checkbox-row"><input type="checkbox" id="vulnGravidez" /><label style="margin:0">Estado de gravidez</label></div>
+                        <div class="checkbox-row"><input type="checkbox" id="vulnOtro" /><label style="margin:0">Otro factor de riesgo incrementado</label></div>
+                        <label>Detalle (opcional)</label>
+                        <input type="text" id="vulnDetalle" placeholder="ej. Embarazo de 28 semanas; padecimiento lumbar diagnosticado" />
+                    </div>
+
+                    <div class="card">
+                        <h2>6. Clasificación de la Bipedestación (puede marcar varias)</h2>
+                        <div class="checkbox-row"><input type="checkbox" id="postEstatica" /><label style="margin:0">Estática (de pie prácticamente sin moverse o con desplazamientos mínimos)</label></div>
+                        <div class="checkbox-row"><input type="checkbox" id="postDinamica" /><label style="margin:0">Dinámica (de pie con posibilidad de desplazamientos amplios)</label></div>
+                        <label>Tiempo total continuo en bipedestación durante la jornada (horas)</label>
+                        <input type="number" id="tiempoContinuo" min="0" max="16" step="0.5" required />
+                        <div class="scale-help">Si el tiempo continuo es mayor a 3 horas, el sistema marcará automáticamente la condición de <strong>Bipedestación Prolongada</strong> conforme a la definición legal (Cuarta, inciso iv).</div>
+                    </div>
+
+                    <div class="card">
+                        <h2>7. Procedimiento de Puntaje de las Siete Condicionantes (Inciso D, DOF 17/07/2025)</h2>
+                        <div class="scale-help">Seleccione la opción que describa la condición real del puesto de trabajo evaluado. Escala oficial de 1 a 3 puntos por condicionante.</div>
+
+                        <fieldset>
+                            <legend>a) Tiempo que la persona trabajadora permanece de pie (duración de la bipedestación diaria sin descanso en posición sedente)</legend>
+                            <select id="fa">
+                                <option value="1">1 — Menor o igual a 30 minutos</option>
+                                <option value="2">2 — Mayor a 30 minutos y menor o igual a una hora</option>
+                                <option value="3">3 — Mayor a una hora</option>
+                            </select>
+                        </fieldset>
+
+                        <fieldset>
+                            <legend>b) Posibilidad de cambiar de postura</legend>
+                            <select id="fb">
+                                <option value="1">1 — Sí, con frecuencia</option>
+                                <option value="2">2 — Algunas veces</option>
+                                <option value="3">3 — No puede cambiar de postura</option>
+                            </select>
+                        </fieldset>
+
+                        <fieldset>
+                            <legend>c) Tipo de superficie de trabajo</legend>
+                            <select id="fc">
+                                <option value="1">1 — Piso con recubrimiento blando que amortigua (tapete, alfombra o materiales blandos antifatiga)</option>
+                                <option value="2">2 — Piso firme pero no duro (por ejemplo, madera, duela o hule)</option>
+                                <option value="3">3 — Piso duro sin recubrimiento como concreto, cerámica o similares</option>
+                            </select>
+                        </fieldset>
+
+                        <fieldset>
+                            <legend>d) Características del calzado utilizado</legend>
+                            <select id="fd">
+                                <option value="1">1 — Ergonómico, con buen soporte y amortiguación</option>
+                                <option value="2">2 — Aceptable, pero no específico</option>
+                                <option value="3">3 — Inadecuado (duro, sin soporte, inseguro)</option>
+                            </select>
+                        </fieldset>
+
+                        <fieldset>
+                            <legend>e) Espacio disponible para moverse</legend>
+                            <select id="fe">
+                                <option value="1">1 — Amplio y permite libre movimiento y/o desplazamientos amplios</option>
+                                <option value="2">2 — Limitado, pero sin obstáculos, permite movimiento y/o desplazamientos cortos</option>
+                                <option value="3">3 — Muy reducido con restricción de movimientos y desplazamientos nulos</option>
+                            </select>
+                        </fieldset>
+
+                        <fieldset>
+                            <legend>f) Malestares reportados por la persona trabajadora que realiza actividades en bipedestación</legend>
+                            <select id="ff">
+                                <option value="1">1 — Ninguno</option>
+                                <option value="2">2 — Eventual fatiga en extremidades inferiores; dolor y/o pesadez ocasional en piernas y/o espalda</option>
+                                <option value="3">3 — Dolor lumbar frecuente, hinchazón y/o calambres</option>
+                            </select>
+                        </fieldset>
+
+                        <fieldset>
+                            <legend>g) Pausas, tareas alternas o complementarias, sin comprometer su actividad</legend>
+                            <select id="fg">
+                                <option value="1">1 — Pausas planeadas por tiempos regulares</option>
+                                <option value="2">2 — Permite algunas pausas no programadas (informales)</option>
+                                <option value="3">3 — No tiene pausas y/o no puede sentarse en ningún momento</option>
+                            </select>
+                        </fieldset>
+                    </div>
+
+                    <div class="card">
+                        <h2>8. Validación de Restricciones Ilegales</h2>
+                        <div class="checkbox-row">
+                            <input type="checkbox" id="obligaSiempreDePie" />
+                            <label style="margin:0; color:#fecaca;">Se exige al trabajador permanecer de pie toda la jornada</label>
+                        </div>
+                        <div class="checkbox-row">
+                            <input type="checkbox" id="prohibidoSentarse" />
+                            <label style="margin:0; color:#fecaca;">Se prohíbe expresamente al trabajador sentarse</label>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h2>9. Evidencia Fotográfica de la Actividad del Puesto de Trabajo</h2>
+                        <label>Fotografía de la actividad evaluada (obligatoria)</label>
+                        <input type="file" id="fotoActividad" accept="image/*" capture="environment" required />
+                        <img id="fotoPreview" alt="Vista previa de la fotografía" />
+                    </div>
+
+                    <div class="actions">
+                        <button type="submit">Evaluar Riesgo</button>
+                        <button type="reset" class="secondary">Limpiar Formulario</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- ===================== COLUMNA DERECHA: RESULTADOS ===================== -->
+            <div>
+                <div class="card" id="resultCard" style="display:none;">
+                    <h2>Resultado de la Evaluación</h2>
+                    <div id="alertsZone"></div>
+
+                    <p>Clasificación de bipedestación: <span id="clasifTags"></span></p>
+
+                    <p>Puntaje total: <strong id="scoreValue"></strong> / 21</p>
+                    <div class="score-bar-wrap"><div class="score-bar" id="scoreBar"></div></div>
+
+                    <div class="risk-box" id="riskBox"></div>
+
+                    <table class="factor-table" id="factorTable"></table>
+                </div>
+
+                <div class="card" id="recoCard" style="display:none;">
+                    <h2>Matriz de Recomendaciones</h2>
+                    <h3 style="font-size:0.85rem; color:var(--text); margin-bottom:6px;">A. Selección de asiento/silla</h3>
+                    <div class="seat-icon-wrap" id="seatIconWrap"></div>
+                    <p id="seatReco" style="font-size:0.88rem;"></p>
+                    <p style="font-size:0.75rem; color:var(--muted);" id="seatCriteria"></p>
+
+                    <h3 style="font-size:0.85rem; color:var(--text); margin: 14px 0 6px;">B. Medidas técnico-administrativas preventivas</h3>
+                    <ul class="reco-list" id="adminRecoList"></ul>
+                </div>
+
+                <div class="card" id="exportCard" style="display:none;">
+                    <h2>Exportar Registro Oficial (NOM-019 / NOM-030)</h2>
+                    <div class="actions">
+                        <button type="button" id="btnDownloadPdf">Generar Reporte PDF</button>
+                        <button type="button" id="btnDownloadWord">Descargar Word</button>
+                        <button type="button" id="btnDownloadJson">Descargar JSON</button>
+                        <button type="button" id="btnDownloadMd">Descargar Markdown</button>
+                        <button type="button" class="secondary" id="btnToggleJson">Ver/Ocultar JSON</button>
+                    </div>
+                    <pre id="jsonOutput" style="display:none;"></pre>
+                </div>
+
+                <!-- Tarjeta de historial -->
+                <div class="card" id="historialCard" style="display:none;">
+                    <h2>📋 Historial de Evaluaciones</h2>
+                    <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+                        <button type="button" id="btnCargarHistorial" style="background:var(--accent); border:none; padding:6px 14px; border-radius:6px; cursor:pointer; font-weight:600;">
+                            🔄 Cargar Historial
+                        </button>
+                        <button type="button" id="btnRefrescarHistorial" style="background:var(--panel-2); border:1px solid var(--border); padding:6px 14px; border-radius:6px; cursor:pointer; color:var(--text);">
+                            🔄 Refrescar
+                        </button>
+                    </div>
+                    <div id="historialList" style="max-height:350px; overflow-y:auto; font-size:0.8rem;">
+                        <p style="color:var(--muted); text-align:center;">Carga el historial para ver las evaluaciones guardadas</p>
+                    </div>
+                </div>
+            </div>
+
         </div>
-        <div class="grid-2">
-          <div>
-            <label>Evaluador</label>
-            <input type="text" id="evaluador" required />
-          </div>
-          <div>
-            <label>Fecha de Verificación</label>
-            <input type="date" id="fechaVerificacion" required />
-          </div>
-        </div>
-        <label>Logo de la Empresa (opcional)</label>
-        <div id="logoDropzone" class="dropzone">
-          <span id="logoDropzoneText">Arrastra el logo aquí o haz clic para seleccionarlo</span>
-          <img id="logoPreview" alt="Logo de la empresa" style="display:none;" />
-        </div>
-        <input type="file" id="logoEmpresaInput" accept="image/*" style="display:none" />
-      </div>
-
-      <div class="card">
-        <h2>2. Datos del Trabajador</h2>
-        <div class="grid-3">
-          <div>
-            <label>Nombre</label>
-            <input type="text" id="trabNombre" required />
-          </div>
-          <div>
-            <label>Género</label>
-            <select id="trabGenero">
-              <option value="Femenino">Femenino</option>
-              <option value="Masculino">Masculino</option>
-              <option value="Otro/No especifica">Otro / No especifica</option>
-            </select>
-          </div>
-          <div>
-            <label>Edad</label>
-            <input type="number" id="trabEdad" min="14" max="100" required />
-          </div>
-        </div>
-        <div class="grid-2">
-          <div>
-            <label>Puesto de Trabajo</label>
-            <input type="text" id="trabPuesto" required />
-          </div>
-          <div>
-            <label>Área</label>
-            <input type="text" id="trabArea" required />
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>3. Condiciones Ambientales del Área</h2>
-        <div class="grid-3">
-          <div><label>Ruido</label><input type="text" id="ambRuido" placeholder="ej. 78 dB" /></div>
-          <div><label>Iluminación</label><input type="text" id="ambIlum" placeholder="ej. 350 lux" /></div>
-          <div><label>Ventilación</label><input type="text" id="ambVent" placeholder="ej. Natural/Mecánica" /></div>
-          <div><label>Temperatura</label><input type="text" id="ambTemp" placeholder="ej. 24°C" /></div>
-          <div><label>Vibraciones</label><input type="text" id="ambVibra" placeholder="ej. Ninguna/Baja" /></div>
-          <div><label>Contaminantes químicos</label><input type="text" id="ambQuim" placeholder="ej. Ninguno" /></div>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>4. Equipos, Carga Física y Atención Requerida</h2>
-        <label>Maquinaria/Herramientas utilizadas</label>
-        <textarea id="equipos" placeholder="ej. Banda transportadora, pistola de calor, herramienta manual..."></textarea>
-        <div class="grid-3">
-          <div class="checkbox-row"><input type="checkbox" id="cargaEmpuja" /><label style="margin:0">Empuja objetos</label></div>
-          <div class="checkbox-row"><input type="checkbox" id="cargaJala" /><label style="margin:0">Jala objetos</label></div>
-          <div class="checkbox-row"><input type="checkbox" id="cargaLevanta" /><label style="margin:0">Levanta objetos</label></div>
-        </div>
-        <label>Nivel de atención requerido</label>
-        <select id="atencion">
-          <option value="Visual">Visual</option>
-          <option value="Auditiva">Auditiva</option>
-          <option value="Motora">Motora</option>
-          <option value="Visual y Motora">Visual y Motora</option>
-          <option value="Visual, Auditiva y Motora">Visual, Auditiva y Motora</option>
-        </select>
-      </div>
-
-      <div class="card">
-        <h2>5. Factores Biológicos / Vulnerabilidad</h2>
-        <div class="checkbox-row"><input type="checkbox" id="vulnSalud" /><label style="margin:0">Estado de salud previo relevante (lesión, varices, problema circulatorio/articular, etc.)</label></div>
-        <div class="checkbox-row"><input type="checkbox" id="vulnGravidez" /><label style="margin:0">Estado de gravidez</label></div>
-        <div class="checkbox-row"><input type="checkbox" id="vulnOtro" /><label style="margin:0">Otro factor de riesgo incrementado</label></div>
-        <label>Detalle (opcional)</label>
-        <input type="text" id="vulnDetalle" placeholder="ej. Embarazo de 28 semanas; padecimiento lumbar diagnosticado" />
-      </div>
-
-      <div class="card">
-        <h2>6. Clasificación de la Bipedestación (puede marcar varias)</h2>
-        <div class="checkbox-row"><input type="checkbox" id="postEstatica" /><label style="margin:0">Estática (de pie prácticamente sin moverse o con desplazamientos mínimos)</label></div>
-        <div class="checkbox-row"><input type="checkbox" id="postDinamica" /><label style="margin:0">Dinámica (de pie con posibilidad de desplazamientos amplios)</label></div>
-        <label>Tiempo total continuo en bipedestación durante la jornada (horas)</label>
-        <input type="number" id="tiempoContinuo" min="0" max="16" step="0.5" required />
-        <div class="scale-help">Si el tiempo continuo es mayor a 3 horas, el sistema marcará automáticamente la condición de <strong>Bipedestación Prolongada</strong> conforme a la definición legal (Cuarta, inciso iv).</div>
-      </div>
-
-      <div class="card">
-        <h2>7. Procedimiento de Puntaje de las Siete Condicionantes (Inciso D, DOF 17/07/2025)</h2>
-        <div class="scale-help">Seleccione la opción que describa la condición real del puesto de trabajo evaluado. Escala oficial de 1 a 3 puntos por condicionante.</div>
-
-        <fieldset>
-          <legend>a) Tiempo que la persona trabajadora permanece de pie (duración de la bipedestación diaria sin descanso en posición sedente)</legend>
-          <select id="fa">
-            <option value="1">1 — Menor o igual a 30 minutos</option>
-            <option value="2">2 — Mayor a 30 minutos y menor o igual a una hora</option>
-            <option value="3">3 — Mayor a una hora</option>
-          </select>
-        </fieldset>
-
-        <fieldset>
-          <legend>b) Posibilidad de cambiar de postura</legend>
-          <select id="fb">
-            <option value="1">1 — Sí, con frecuencia</option>
-            <option value="2">2 — Algunas veces</option>
-            <option value="3">3 — No puede cambiar de postura</option>
-          </select>
-        </fieldset>
-
-        <fieldset>
-          <legend>c) Tipo de superficie de trabajo</legend>
-          <select id="fc">
-            <option value="1">1 — Piso con recubrimiento blando que amortigua (tapete, alfombra o materiales blandos antifatiga)</option>
-            <option value="2">2 — Piso firme pero no duro (por ejemplo, madera, duela o hule)</option>
-            <option value="3">3 — Piso duro sin recubrimiento como concreto, cerámica o similares</option>
-          </select>
-        </fieldset>
-
-        <fieldset>
-          <legend>d) Características del calzado utilizado</legend>
-          <select id="fd">
-            <option value="1">1 — Ergonómico, con buen soporte y amortiguación</option>
-            <option value="2">2 — Aceptable, pero no específico</option>
-            <option value="3">3 — Inadecuado (duro, sin soporte, inseguro)</option>
-          </select>
-        </fieldset>
-
-        <fieldset>
-          <legend>e) Espacio disponible para moverse</legend>
-          <select id="fe">
-            <option value="1">1 — Amplio y permite libre movimiento y/o desplazamientos amplios</option>
-            <option value="2">2 — Limitado, pero sin obstáculos, permite movimiento y/o desplazamientos cortos</option>
-            <option value="3">3 — Muy reducido con restricción de movimientos y desplazamientos nulos</option>
-          </select>
-        </fieldset>
-
-        <fieldset>
-          <legend>f) Malestares reportados por la persona trabajadora que realiza actividades en bipedestación</legend>
-          <select id="ff">
-            <option value="1">1 — Ninguno</option>
-            <option value="2">2 — Eventual fatiga en extremidades inferiores; dolor y/o pesadez ocasional en piernas y/o espalda</option>
-            <option value="3">3 — Dolor lumbar frecuente, hinchazón y/o calambres</option>
-          </select>
-        </fieldset>
-
-        <fieldset>
-          <legend>g) Pausas, tareas alternas o complementarias, sin comprometer su actividad</legend>
-          <select id="fg">
-            <option value="1">1 — Pausas planeadas por tiempos regulares</option>
-            <option value="2">2 — Permite algunas pausas no programadas (informales)</option>
-            <option value="3">3 — No tiene pausas y/o no puede sentarse en ningún momento</option>
-          </select>
-        </fieldset>
-      </div>
-
-      <div class="card">
-        <h2>8. Validación de Restricciones Ilegales</h2>
-        <div class="checkbox-row">
-          <input type="checkbox" id="obligaSiempreDePie" />
-          <label style="margin:0; color:#fecaca;">Se exige al trabajador permanecer de pie toda la jornada</label>
-        </div>
-        <div class="checkbox-row">
-          <input type="checkbox" id="prohibidoSentarse" />
-          <label style="margin:0; color:#fecaca;">Se prohíbe expresamente al trabajador sentarse</label>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>9. Evidencia Fotográfica de la Actividad del Puesto de Trabajo</h2>
-        <label>Fotografía de la actividad evaluada (obligatoria)</label>
-        <input type="file" id="fotoActividad" accept="image/*" capture="environment" required />
-        <img id="fotoPreview" alt="Vista previa de la fotografía" />
-      </div>
-
-      <div class="actions">
-        <button type="submit">Evaluar Riesgo</button>
-        <button type="reset" class="secondary">Limpiar Formulario</button>
-      </div>
-    </form>
-  </div>
-
-  <!-- ===================== COLUMNA DERECHA: RESULTADOS ===================== -->
-  <div>
-    <div class="card" id="resultCard" style="display:none;">
-      <h2>Resultado de la Evaluación</h2>
-      <div id="alertsZone"></div>
-
-      <p>Clasificación de bipedestación: <span id="clasifTags"></span></p>
-
-      <p>Puntaje total: <strong id="scoreValue"></strong> / 21</p>
-      <div class="score-bar-wrap"><div class="score-bar" id="scoreBar"></div></div>
-
-      <div class="risk-box" id="riskBox"></div>
-
-      <table class="factor-table" id="factorTable"></table>
     </div>
 
-    <div class="card" id="recoCard" style="display:none;">
-      <h2>Matriz de Recomendaciones</h2>
-      <h3 style="font-size:0.85rem; color:var(--text); margin-bottom:6px;">A. Selección de asiento/silla</h3>
-      <div class="seat-icon-wrap" id="seatIconWrap"></div>
-      <p id="seatReco" style="font-size:0.88rem;"></p>
-      <p style="font-size:0.75rem; color:var(--muted);" id="seatCriteria"></p>
-
-      <h3 style="font-size:0.85rem; color:var(--text); margin: 14px 0 6px;">B. Medidas técnico-administrativas preventivas</h3>
-      <ul class="reco-list" id="adminRecoList"></ul>
+    <!-- Pestaña 2: Historial Completo -->
+    <div id="tabHistorial" class="tab-pane" style="display: none; padding: 24px; max-width: 1200px; margin: 0 auto;">
+        <!-- El contenido del historial se cargará aquí -->
+        <p style="text-align:center; color:var(--muted);">⏳ Cargando historial completo...</p>
     </div>
 
-    <div class="card" id="exportCard" style="display:none;">
-      <h2>Exportar Registro Oficial (NOM-019 / NOM-030)</h2>
-      <div class="actions">
-        <button type="button" id="btnDownloadPdf">Generar Reporte PDF</button>
-        <button type="button" id="btnDownloadWord">Descargar Word</button>
-        <button type="button" id="btnDownloadJson">Descargar JSON</button>
-        <button type="button" id="btnDownloadMd">Descargar Markdown</button>
-        <button type="button" class="secondary" id="btnToggleJson">Ver/Ocultar JSON</button>
-      </div>
-      <pre id="jsonOutput" style="display:none;"></pre>
-    </div>
-
-    <!-- Tarjeta de historial -->
-    <div class="card" id="historialCard" style="display:none;">
-        <h2>📋 Historial de Evaluaciones</h2>
-        <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
-            <button type="button" id="btnCargarHistorial" style="background:var(--accent); border:none; padding:6px 14px; border-radius:6px; cursor:pointer; font-weight:600;">
-                🔄 Cargar Historial
-            </button>
-            <button type="button" id="btnRefrescarHistorial" style="background:var(--panel-2); border:1px solid var(--border); padding:6px 14px; border-radius:6px; cursor:pointer; color:var(--text);">
-                🔄 Refrescar
-            </button>
-        </div>
-        <div id="historialList" style="max-height:350px; overflow-y:auto; font-size:0.8rem;">
-            <p style="color:var(--muted); text-align:center;">Carga el historial para ver las evaluaciones guardadas</p>
-        </div>
-    </div>
-  </div>
 </div>
 
 <p class="footer-note">Elaborado por Sheila Vázquez para Tips.</p>
@@ -925,6 +1154,12 @@
             fotoPreview.style.display = 'block';
         }
         
+        // Cambiar a la pestaña de evaluación
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelector('[data-tab="evaluacion"]').classList.add('active');
+        document.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
+        document.getElementById('tabEvaluacion').style.display = 'block';
+        
         document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
         
     } catch (error) {
@@ -937,6 +1172,10 @@
     const eliminado = await eliminarEvaluacion(id);
     if (eliminado) {
         await mostrarHistorial();
+        // Si estamos en la pestaña de historial completo, recargar también
+        if (document.getElementById('tabHistorial').style.display !== 'none') {
+            cargarHistorialCompleto();
+        }
     }
   };
 
@@ -1792,6 +2031,369 @@ ${innerHtml}
 
   document.getElementById('btnCargarHistorial').addEventListener('click', mostrarHistorial);
   document.getElementById('btnRefrescarHistorial').addEventListener('click', mostrarHistorial);
+
+  // ============================================================
+  // NAVEGACIÓN POR PESTAÑAS
+  // ============================================================
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        
+        document.querySelectorAll('.tab-pane').forEach(pane => pane.style.display = 'none');
+        
+        const tabId = this.dataset.tab;
+        const targetPane = document.getElementById('tab' + tabId.charAt(0).toUpperCase() + tabId.slice(1));
+        if (targetPane) {
+            targetPane.style.display = 'block';
+        }
+        
+        if (tabId === 'historial') {
+            cargarHistorialCompleto();
+        }
+    });
+  });
+
+  // ============================================================
+  // HISTORIAL COMPLETO
+  // ============================================================
+
+  let historialCompletoData = [];
+  let currentPage = 1;
+  const itemsPerPage = 15;
+
+  async function cargarHistorialCompleto() {
+    const contenedor = document.getElementById('tabHistorial');
+    contenedor.innerHTML = '<p style="text-align:center; color:var(--muted);">⏳ Cargando historial completo...</p>';
+    
+    try {
+        const { data, error } = await supabaseClient
+            .from('evaluaciones_ley_silla')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        
+        historialCompletoData = data || [];
+        renderizarHistorialCompleto(historialCompletoData);
+        
+    } catch (error) {
+        console.error('Error al cargar historial completo:', error);
+        contenedor.innerHTML = `<p style="color:var(--red);">❌ Error al cargar: ${error.message}</p>`;
+    }
+  }
+
+  function renderizarHistorialCompleto(data) {
+    const contenedor = document.getElementById('tabHistorial');
+    
+    const filtroTexto = document.getElementById('filtroBusqueda')?.value?.toLowerCase() || '';
+    const filtroNivel = document.getElementById('filtroNivel')?.value || '';
+    const filtroFecha = document.getElementById('filtroFecha')?.value || '';
+    
+    let datosFiltrados = data;
+    
+    if (filtroTexto) {
+        datosFiltrados = datosFiltrados.filter(item => 
+            (item.trabajador_nombre?.toLowerCase().includes(filtroTexto) || '') ||
+            (item.evaluador?.toLowerCase().includes(filtroTexto) || '') ||
+            (item.denominacion_centro?.toLowerCase().includes(filtroTexto) || '')
+        );
+    }
+    
+    if (filtroNivel) {
+        datosFiltrados = datosFiltrados.filter(item => item.nivel_riesgo === filtroNivel);
+    }
+    
+    if (filtroFecha) {
+        datosFiltrados = datosFiltrados.filter(item => 
+            item.fecha_verificacion === filtroFecha
+        );
+    }
+    
+    const total = datosFiltrados.length;
+    const totalPages = Math.ceil(total / itemsPerPage);
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    const pageData = datosFiltrados.slice(start, end);
+    
+    const stats = {
+        total: historialCompletoData.length,
+        riesgoBajo: historialCompletoData.filter(i => i.nivel_riesgo === 'BAJO').length,
+        riesgoMedio: historialCompletoData.filter(i => i.nivel_riesgo === 'MEDIO').length,
+        riesgoAlto: historialCompletoData.filter(i => i.nivel_riesgo === 'ALTO').length,
+        evaluadores: new Set(historialCompletoData.map(i => i.evaluador)).size,
+        trabajadores: new Set(historialCompletoData.map(i => i.trabajador_nombre)).size
+    };
+    
+    let html = `
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
+            <h2 style="color:var(--accent); margin:0;">📋 Historial Completo de Evaluaciones</h2>
+            <button onclick="exportarHistorialCSV()" style="background:#22c55e; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:600; color:#0c1b2a;">
+                📊 Exportar a CSV
+            </button>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="numero">${stats.total}</div>
+                <div class="label">Total Evaluaciones</div>
+            </div>
+            <div class="stat-card">
+                <div class="numero" style="color: #22c55e;">${stats.riesgoBajo}</div>
+                <div class="label">Riesgo Bajo</div>
+            </div>
+            <div class="stat-card">
+                <div class="numero" style="color: #eab308;">${stats.riesgoMedio}</div>
+                <div class="label">Riesgo Medio</div>
+            </div>
+            <div class="stat-card">
+                <div class="numero" style="color: #ef4444;">${stats.riesgoAlto}</div>
+                <div class="label">Riesgo Alto</div>
+            </div>
+            <div class="stat-card">
+                <div class="numero">${stats.evaluadores}</div>
+                <div class="label">Evaluadores</div>
+            </div>
+            <div class="stat-card">
+                <div class="numero">${stats.trabajadores}</div>
+                <div class="label">Trabajadores</div>
+            </div>
+        </div>
+        
+        <div class="filtros-historial">
+            <div>
+                <label>🔍 Buscar</label>
+                <input type="text" id="filtroBusqueda" placeholder="Trabajador, evaluador, centro..." oninput="aplicarFiltros()" />
+            </div>
+            <div>
+                <label>📊 Nivel de Riesgo</label>
+                <select id="filtroNivel" onchange="aplicarFiltros()">
+                    <option value="">Todos</option>
+                    <option value="BAJO">Bajo</option>
+                    <option value="MEDIO">Medio</option>
+                    <option value="ALTO">Alto</option>
+                </select>
+            </div>
+            <div>
+                <label>📅 Fecha</label>
+                <input type="date" id="filtroFecha" onchange="aplicarFiltros()" />
+            </div>
+            <div style="display: flex; align-items: flex-end;">
+                <button onclick="limpiarFiltros()" style="background: var(--panel-2); border: 1px solid var(--border); color: var(--text); padding: 8px 20px; border-radius: 6px; cursor: pointer;">
+                    🗑️ Limpiar Filtros
+                </button>
+            </div>
+        </div>
+        
+        <div style="overflow-x: auto; background: var(--panel); border-radius: 8px; border: 1px solid var(--border);">
+            <table class="historial-completo-table">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Centro de Trabajo</th>
+                        <th>Trabajador</th>
+                        <th>Puesto</th>
+                        <th>Evaluador</th>
+                        <th style="text-align:center;">Puntaje</th>
+                        <th style="text-align:center;">Nivel</th>
+                        <th style="text-align:center;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+    
+    if (pageData.length === 0) {
+        html += `<tr><td colspan="8" style="text-align:center; padding:30px; color:var(--muted);">📭 No hay evaluaciones que coincidan con los filtros</td></tr>`;
+    } else {
+        pageData.forEach(item => {
+            const fecha = item.created_at ? new Date(item.created_at).toLocaleDateString('es-MX') : '-';
+            const nivel = item.nivel_riesgo || 'N/A';
+            const id = item.id || '';
+            
+            html += `
+                <tr>
+                    <td>${fecha}</td>
+                    <td>${item.denominacion_centro || '-'}</td>
+                    <td>${item.trabajador_nombre || '-'}</td>
+                    <td>${item.trabajador_puesto || '-'}</td>
+                    <td>${item.evaluador || '-'}</td>
+                    <td style="text-align:center;">${item.puntaje_total || 0}/21</td>
+                    <td style="text-align:center;">
+                        <span class="badge-estado ${nivel}">${nivel}</span>
+                    </td>
+                    <td style="text-align:center;">
+                        <button onclick="verDetalleEvaluacion('${id}')" 
+                                style="background: var(--accent); border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 0.7rem; margin-right: 4px; color:#0c1b2a;">
+                            👁️ Ver
+                        </button>
+                        <button onclick="window.eliminarEvaluacionYRecargar('${id}')" 
+                                style="background: #450a0a; color: #fecaca; border: 1px solid #7f1d1d; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">
+                            🗑️
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="paginacion">
+            <button onclick="cambiarPagina(1)" ${currentPage === 1 ? 'disabled' : ''}>⏮️</button>
+            <button onclick="cambiarPagina(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>◀️</button>
+            <span style="padding: 8px 14px; background: var(--panel-2); border-radius: 6px; border: 1px solid var(--border);">
+                Página ${currentPage} de ${totalPages || 1}
+            </span>
+            <button onclick="cambiarPagina(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}>▶️</button>
+            <button onclick="cambiarPagina(${totalPages})" ${currentPage >= totalPages ? 'disabled' : ''}>⏭️</button>
+        </div>
+        
+        <p style="text-align:center; color:var(--muted); font-size:0.75rem; margin-top:15px;">
+            Mostrando ${pageData.length} de ${total} registros
+        </p>
+    `;
+    
+    contenedor.innerHTML = html;
+  }
+
+  window.aplicarFiltros = function() {
+    currentPage = 1;
+    renderizarHistorialCompleto(historialCompletoData);
+  };
+
+  window.limpiarFiltros = function() {
+    document.getElementById('filtroBusqueda').value = '';
+    document.getElementById('filtroNivel').value = '';
+    document.getElementById('filtroFecha').value = '';
+    currentPage = 1;
+    renderizarHistorialCompleto(historialCompletoData);
+  };
+
+  window.cambiarPagina = function(page) {
+    const totalPages = Math.ceil(historialCompletoData.length / itemsPerPage);
+    if (page < 1 || page > totalPages) return;
+    currentPage = page;
+    renderizarHistorialCompleto(historialCompletoData);
+  };
+
+  window.verDetalleEvaluacion = async function(id) {
+    try {
+        const data = await cargarEvaluacion(id);
+        if (!data) {
+            alert('❌ No se pudo cargar la evaluación');
+            return;
+        }
+        
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.id = 'modalDetalle';
+        
+        const fecha = data.created_at ? new Date(data.created_at).toLocaleString('es-MX') : '-';
+        const nivel = data.nivel_riesgo || 'N/A';
+        const nivelColor = nivel === 'BAJO' ? '#22c55e' : nivel === 'MEDIO' ? '#eab308' : '#ef4444';
+        
+        modal.innerHTML = `
+            <div class="modal-content">
+                <button class="modal-close" onclick="cerrarModal()">✕</button>
+                <h2>📋 Detalle de Evaluación</h2>
+                
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin:15px 0;">
+                    <div><strong>Centro:</strong> ${data.denominacion_centro || '-'}</div>
+                    <div><strong>Domicilio:</strong> ${data.domicilio_centro || '-'}</div>
+                    <div><strong>Evaluador:</strong> ${data.evaluador || '-'}</div>
+                    <div><strong>Fecha:</strong> ${data.fecha_verificacion || '-'}</div>
+                    <div><strong>Trabajador:</strong> ${data.trabajador_nombre || '-'}</div>
+                    <div><strong>Puesto:</strong> ${data.trabajador_puesto || '-'}</div>
+                    <div><strong>Área:</strong> ${data.trabajador_area || '-'}</div>
+                    <div><strong>Género:</strong> ${data.trabajador_genero || '-'}</div>
+                    <div><strong>Edad:</strong> ${data.trabajador_edad || '-'}</div>
+                    <div><strong>Tiempo continuo:</strong> ${data.bip_tiempo_continuo || 0} horas</div>
+                    <div><strong>Puntaje total:</strong> <strong>${data.puntaje_total || 0}/21</strong></div>
+                    <div><strong>Nivel de riesgo:</strong> <span style="color:${nivelColor}; font-weight:700;">${nivel}</span></div>
+                </div>
+                
+                <details>
+                    <summary style="cursor:pointer; font-weight:600; color:var(--accent);">📊 Ver condicionantes</summary>
+                    <div style="margin-top:10px; background:var(--panel-2); padding:15px; border-radius:8px;">
+                        <p><strong>a) Tiempo de pie:</strong> ${data.cond_a || 1}/3</p>
+                        <p><strong>b) Posibilidad de cambiar postura:</strong> ${data.cond_b || 1}/3</p>
+                        <p><strong>c) Tipo de superficie:</strong> ${data.cond_c || 1}/3</p>
+                        <p><strong>d) Características del calzado:</strong> ${data.cond_d || 1}/3</p>
+                        <p><strong>e) Espacio disponible:</strong> ${data.cond_e || 1}/3</p>
+                        <p><strong>f) Malestares reportados:</strong> ${data.cond_f || 1}/3</p>
+                        <p><strong>g) Pausas y tareas alternas:</strong> ${data.cond_g || 1}/3</p>
+                    </div>
+                </details>
+                
+                ${data.evidencia_foto ? `
+                    <div style="margin-top:15px;">
+                        <strong>📸 Evidencia fotográfica:</strong>
+                        <div style="margin-top:10px;">
+                            <img src="${data.evidencia_foto}" style="max-width:100%; max-height:300px; border-radius:8px; border:1px solid var(--border);" />
+                        </div>
+                    </div>
+                ` : ''}
+                
+                <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end;">
+                    <button onclick="window.cargarEvaluacionYRenderizar('${data.id}')" style="background:var(--accent); border:none; padding:8px 20px; border-radius:6px; cursor:pointer; font-weight:600; color:#0c1b2a;">
+                        📝 Cargar en formulario
+                    </button>
+                    <button onclick="cerrarModal()" style="background:var(--panel-2); border:1px solid var(--border); color:var(--text); padding:8px 20px; border-radius:6px; cursor:pointer;">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+    } catch (error) {
+        console.error('Error al ver detalle:', error);
+        alert('❌ Error al cargar el detalle');
+    }
+  };
+
+  window.cerrarModal = function() {
+    const modal = document.getElementById('modalDetalle');
+    if (modal) modal.remove();
+  };
+
+  document.addEventListener('click', function(e) {
+    const modal = document.getElementById('modalDetalle');
+    if (modal && e.target === modal) {
+        window.cerrarModal();
+    }
+  });
+
+  window.exportarHistorialCSV = function() {
+    if (historialCompletoData.length === 0) {
+        alert('No hay datos para exportar');
+        return;
+    }
+    
+    const headers = ['Fecha', 'Centro', 'Trabajador', 'Puesto', 'Evaluador', 'Puntaje', 'Nivel'];
+    const rows = historialCompletoData.map(item => [
+        item.created_at ? new Date(item.created_at).toLocaleDateString('es-MX') : '',
+        item.denominacion_centro || '',
+        item.trabajador_nombre || '',
+        item.trabajador_puesto || '',
+        item.evaluador || '',
+        item.puntaje_total || 0,
+        item.nivel_riesgo || ''
+    ]);
+    
+    const csv = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+    
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `historial_evaluaciones_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
 
 })();
 </script>
